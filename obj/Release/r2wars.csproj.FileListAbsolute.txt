@@ -1,0 +1,7 @@
+d:\2018\r2con\r2wars\torneoWeb\bin\Release\WindowsFormsApplication1.exe.config
+d:\2018\r2con\r2wars\torneoWeb\bin\Release\WindowsFormsApplication1.exe
+d:\2018\r2con\r2wars\torneoWeb\bin\Release\WindowsFormsApplication1.pdb
+d:\2018\r2con\r2wars\torneoWeb\obj\Release\WindowsFormsApplication1.Properties.Resources.resources
+d:\2018\r2con\r2wars\torneoWeb\obj\Release\r2wars.csproj.GenerateResource.Cache
+d:\2018\r2con\r2wars\torneoWeb\obj\Release\WindowsFormsApplication1.exe
+d:\2018\r2con\r2wars\torneoWeb\obj\Release\WindowsFormsApplication1.pdb

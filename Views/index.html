@@ -1,0 +1,350 @@
+﻿<html>
+
+<script>
+function timerFunc() {
+    Query('next', (res) => {
+      try {
+        state = JSON.parse(res);
+        if (state.status.indexOf("Stopped")!==-1)
+        {
+            window.clearInterval(clock);
+            document.getElementById("start").innerHTML ="start";
+            clicked = false;
+        }
+        updateUI();
+      } catch (e) {
+        alert(e);
+      }
+    });	
+	
+}
+var clicked = false;
+document.addEventListener('DOMContentLoaded', function () {
+  $('reset').addEventListener('click', () => {
+      socket.send("reset");
+      /*Query('reset', (res) => {
+      
+            try {
+                state = JSON.parse(res);
+                updateUI();
+            } catch (e) {
+                alert(e);
+            }
+        });*/
+    });
+  $('start').addEventListener('click', () => {
+    if (clicked === false) {
+        //clock = setInterval("timerFunc()", 50);
+        socket.send("start");
+        document.getElementById("start").innerHTML ="stop";
+        clicked = true;
+	}
+	else if (clicked === true) {
+		//window.clearInterval(clock);
+        document.getElementById("start").innerHTML ="start";
+        socket.send("stop");
+        clicked = false;
+    }
+  });
+  $('next').addEventListener('click', () => {
+    socket.send("next");
+
+  });
+  $('buffer').addEventListener('click', () => {
+
+  });
+  $('lt').addEventListener('click', () => {
+
+  });
+  $('gt').addEventListener('click', () => {
+
+  });
+  updateUI();
+});
+
+
+var state = {};
+
+resetState();
+
+var socket = new WebSocket('ws://localhost:9966/r2wars');
+socket.onopen = function ()
+{
+};
+socket.onclose = function ()
+{
+};
+
+socket.onmessage = function (evt) {
+    //alert(evt.data);
+    if (evt.data !== "none") {
+
+        state = JSON.parse(evt.data);
+        updateUI();
+        socket.send("moreflow");
+    }
+};
+
+function resetState() {
+state = {
+  player1: {
+    regs: '',
+    code: '',
+  },
+  player2: {
+    regs: '',
+    code: '',
+  },
+  memory: [
+    'rR',
+    'gW',
+    '',
+    'bX',
+  ],
+  console: '...',
+  status: 'idle'
+};
+}
+
+function updateUI() {
+  var memory = memoryWidget();
+  $('memory').innerHTML = memory;
+  $('status').innerHTML = state.status;
+  $('console').innerHTML = state.console;
+  $('regs1').innerHTML = state.player1.regs;
+  $('code1').innerHTML = state.player1.code;
+  $('regs2').innerHTML = state.player2.regs;
+  $('code2').innerHTML = state.player2.code;
+}
+
+function addrForRow(x) {
+  return "0x" + ("0000" + x.toString(16)).substr(-4);
+}
+
+function styler(x) {
+  var color='white';
+  switch(x) {
+  case 'r': color='red'; break;
+  case 'y': color='yellow'; break;
+  case 'g': color='green'; break;
+  case 'w': color='white'; break;
+  case 'n': color='black'; break;
+  case 'b': color='blue'; break;
+  case 'q': color='aqua'; break;
+  case 'o': color='orange'; break;
+  case 'v': color='violet'; break;
+  }
+  return 'background-color:'+ color;
+}
+
+function memoryWidget() {
+  var a = '<table class="memtable">';
+  var rows = 32;
+  var rowlen = 32;
+  for (i = 0; i<rows; i++) {
+    var addr = addrForRow(i * rowlen);
+    var row = "";
+    for (j = 0; j <rowlen;j++) {
+      var s = state.memory[(i * rowlen) + j];
+      var ch = ((s&&s.length) > 1)? s[1]: '&nbsp;';
+      var style = (s&&s.length > 0)? styler(s[0]): '';
+      row += '<td style="'+style+'" class="box">'+ch+'</td>'
+    }
+    a += "<tr><td class='addr'>"+addr+"</td>"+row+"</tr>";
+  }
+  return a + '</table>';
+}
+
+function $(x) {
+  return document.getElementById(x);
+}
+
+function Query(c, cb) {
+  Ajax('GET', '/r2wars/' + encodeURI(c), '', function(x) { if (cb) { cb(x); } });
+}
+var ajax_in_process = false;
+function Ajax(method, uri, body, fn) {
+        if (typeof (XMLHttpRequest) == 'undefined') {
+                return false;
+        }
+      
+        console.log('async waiting');
+        if (ajax_in_process) {
+                setTimeout(function() {
+                                Ajax(method, uri, body, fn);
+                        }, 100);
+                return false;
+        }
+     
+
+        var x = new XMLHttpRequest();
+       
+        if (!x) {
+                return false;
+        }
+        ajax_in_process = true;
+    
+        x.open(method, uri, false);
+    
+        x.setRequestHeader('Accept', 'text/plain');
+        x.setRequestHeader ('Accept', 'text/html');
+        //x.setRequestHeader('Content-Type', 'application/x-ww-form-urlencoded; charset=UTF-8');
+        x.onreadystatechange = function() {
+                ajax_in_process = false;
+                if (x.status == 200) {
+                        if (fn) {
+                                fn(x.responseText);
+                        } else {
+                                console.error('missing ajax callback');
+                        }
+                } else {
+                        console.error('ajax ' + x.status);
+                }
+        };
+        x.send(null);
+}
+
+</script>
+
+<style>
+table {
+}
+
+button {
+  width:100%;
+}
+
+.addr {
+  color:white;
+  background-color:black;
+}
+
+.memory {
+  overflow-y: scroll;
+  height:100%;
+}
+
+.box {
+  width:1em;
+  height:1em;
+  color: white;
+  background-color:#a0a0a0;
+}
+
+.console {
+  height: 200px;
+  background-color:black;
+  color:white;
+  font-family: Courier New;
+  font-weight:bold;
+  white-space: pre;
+}
+
+.console2 {
+  background-color:#c0c0c0;
+  color:black;
+  font-family: Courier New;
+  font-weight:bold;
+  white-space: pre;
+}
+
+body {
+  background-color:#c0c0c0;
+}
+
+td {
+  font-family: Courier New;
+  border: 1px solid #a0a0a0;
+}
+div {
+  font-family: Courer New;
+}
+tr {
+  background-color:#e0e0e0;
+}
+.player1 {
+  background-color:blue;
+  color:white;
+  font-weight:bold;
+  font-size:2em;
+  font-family: Courier New;
+  text-align:center;
+}
+.player2 {
+  color:white;
+  background-color:red;
+  font-weight:bold;
+  font-size:2em;
+  font-family: Courier New;
+  text-align:center;
+}
+
+.memtable {
+  font-size: 10px;
+}
+</style>
+<body>
+
+<table style="width:100%;height:100%">
+<tr>
+
+<td style="width:30%">
+ <table style="height:100%;width:100%">
+ <tr>
+  <td class="player1">Player 1</td>
+ </tr>
+ <tr style="height:100%">
+<td valign=top>
+<div class=console id=regs1>regs</div>
+<div class=console2 id=code1>code</div>
+</td>
+ </tr>
+ </table>
+</td>
+
+<td style="width:30%">
+ <table style="height:100%;width:100%">
+ <tr style="height:100%">
+  <td valign=top><div class=memory id=memory>memory</div></td>
+ </tr>
+ <tr style="height:100%">
+<td>
+<table style="width:100%">
+<tr>
+  <td><button id="reset">Reset</button></td>
+  <td><button id="start">Start</button></td>
+  <td><button id="next">Next</button></td>
+  <td><button id="buffer">Buffer</button></td>
+  <td><button id="lt">&lt;</button></td>
+  <td><button id="gt">&gt;</button></td>
+</tr>
+</table>
+</td>
+ </tr>
+ <tr style="height:100%">
+ <td><div id="console" class="console">console</div></td>
+ </tr>
+ <tr style="height:100%">
+ <td id="status">status</td>
+ </tr>
+ </table>
+</td>
+
+<td style="width:30%">
+ <table style="height:100%;width:100%">
+ <tr>
+  <td class="player2">Player 2</td>
+ </tr>
+ <tr style="height:100%">
+<td valign=top height="100%">
+<div class=console id=regs2>regs</div>
+<div class=console2 id=code2>code</div>
+</td>
+ </tr>
+ </table>
+</td>
+
+</tr>
+</table>
+</body>
+</html>

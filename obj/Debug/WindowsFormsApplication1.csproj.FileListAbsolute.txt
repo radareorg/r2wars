@@ -1,0 +1,13 @@
+d:\sawer\documentos\visual studio 2015\Projects\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe.config
+d:\2017\radare\r2wars\testc#\bin\Debug\WindowsFormsApplication1.exe.config
+d:\2017\radare\r2wars\testc#\bin\Debug\WindowsFormsApplication1.exe
+d:\2017\radare\r2wars\testc#\bin\Debug\WindowsFormsApplication1.pdb
+d:\2017\radare\r2wars\testc#\bin\Debug\Mono.Posix.dll
+d:\2017\radare\r2wars\testc#\bin\Debug\r2pipe.dll
+d:\2017\radare\r2wars\testc#\obj\Debug\WindowsFormsApplication1.csprojResolveAssemblyReference.cache
+d:\2017\radare\r2wars\testc#\obj\Debug\WindowsFormsApplication1.Form1.resources
+d:\2017\radare\r2wars\testc#\obj\Debug\WindowsFormsApplication1.Properties.Resources.resources
+d:\2017\radare\r2wars\testc#\obj\Debug\WindowsFormsApplication1.csproj.GenerateResource.Cache
+d:\2017\radare\r2wars\testc#\obj\Debug\WindowsFormsApplication1.exe
+d:\2017\radare\r2wars\testc#\obj\Debug\WindowsFormsApplication1.pdb
+d:\2017\radare\r2wars\testc#\obj\Debug\WindowsFormsApplication1.Form2.resources
