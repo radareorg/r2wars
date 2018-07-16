@@ -74,7 +74,9 @@ namespace r2warsTorneo
         {
             string torneo =  "Total Ciclos:" + totalciclos+"\\n"+ r2warsStatic.ini.textBox1.Replace("\n", "\\n").Replace("\r","");
             string clasi = r2warsStatic.ini.textBox2.Replace("\n", "\\n").Replace("\r", "");
-            string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\\n\\n\\n" + clasi + "\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\"},\"memory\":[" + getmemoria() + "],\"console\":\""+torneo+"\",\"status\":\"" + status + "\"}";
+            string username1 = Engine.GetUserName(0);
+            string username2 = Engine.GetUserName(1);
+            string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\\n\\n\\n" + clasi + "\",\"name\":\""+username1+"\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\",\"name\":\""+username2+"\"},\"memory\":[" + getmemoria() + "],\"console\":\""+torneo+"\",\"status\":\"" + status + "\"}";
             return salida;
         }
 
@@ -205,7 +207,7 @@ namespace r2warsTorneo
             updateStatusDelegate = new UpdateStatusDelegate(this.update);
             workerThread = new Thread(new ThreadStart(this.newgameloop));
             workerThread.Start();
-
+  
         }
 
 

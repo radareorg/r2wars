@@ -94,10 +94,12 @@ state = {
   player1: {
     regs: '',
     code: '',
+    name: '',
   },
   player2: {
     regs: '',
     code: '',
+    name: '',
   },
   memory: [
     'rR',
@@ -119,6 +121,8 @@ function updateUI() {
   $('code1').innerHTML = state.player1.code;
   $('regs2').innerHTML = state.player2.regs;
   $('code2').innerHTML = state.player2.code;
+  $('player1').innerHTML = state.player1.name;
+  $('player2').innerHTML = state.player2.name;
 }
 
 function addrForRow(x) {
@@ -296,7 +300,7 @@ tr {
 <td style="width:30%">
  <table style="height:100%;width:100%">
  <tr>
-  <td class="player1">Player 1</td>
+  <td class="player1" id=player1>Player 1</td>
  </tr>
  <tr style="height:100%">
 <td valign=top>
@@ -338,7 +342,7 @@ tr {
 <td style="width:30%">
  <table style="height:100%;width:100%">
  <tr>
-  <td class="player2">Player 2</td>
+  <td class="player2" id=player2>Player 2</td>
  </tr>
  <tr style="height:100%">
 <td valign=top height="100%">
