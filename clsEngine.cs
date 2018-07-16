@@ -127,8 +127,8 @@ namespace r2warsTorneo
    
     public class clsEngine
     {
-        public string r2path = "radare2.exe";
-        public string rasm2path = "rasm2.exe";
+        private string _r2path = "";
+        private string _rasm2path = "";
         public int memsize = 1024;
         public int maxprogsize = 64;
         private IR2Pipe r2 = null;
@@ -136,6 +136,53 @@ namespace r2warsTorneo
         public int uidx = 0;
         public List<player> players = new List<player>();
 
+
+        public string r2path
+        {
+            get
+            {
+                
+                if (_r2path == "")
+                {
+                    string ruta = "";
+                    if (!OperatingSystem.IsWindows())
+                        ruta = "r2";
+                    else
+                        ruta = "radare2.exe";
+                    return ruta;
+                }
+                else
+                    return this._r2path;
+              
+            }
+            set
+            {
+                this._r2path = value;
+            }
+        }
+        public string rasm2path
+        {
+            get
+            {
+
+                if (_rasm2path == "")
+                {
+                    string ruta = "";
+                    if (!OperatingSystem.IsWindows())
+                        ruta = "rasm2";
+                    else
+                        ruta = "rasm2.exe";
+                    return ruta;
+                }
+                else
+                    return this._rasm2path;
+
+            }
+            set
+            {
+                this._rasm2path = value;
+            }
+        }
         public string runcommand(string cmd)
         {
             return this.r2.RunCommand(cmd).Replace("\r", "");
@@ -173,14 +220,12 @@ namespace r2warsTorneo
             return rand;
         }
         string initstate = "";
-        public string Init(string[] files, string[] usernames, string[] rutabins, string arch)
+        public string Init(string[] files, string[] usernames, string arch)
         {
             players.Clear();
-            r2path = rutabins[0];
             Console.WriteLine("r2path =  " + r2path);
             if (File.Exists(r2path) || !OperatingSystem.IsWindows())
             {
-                rasm2path = rutabins[1];
                 List<int> offsets;
                 int idx = 0;
                 string file = "";

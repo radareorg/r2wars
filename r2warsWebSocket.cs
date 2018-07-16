@@ -12,26 +12,34 @@ namespace r2warsTorneo
             {
                 msg = r2warsStatic.r2w.json_output();
             }
-            else if (recv == "next")
+            else if (recv == "reset")
             {
-                r2warsStatic.r2w.btStep_Click();
+                r2warsStatic.r2w.iniciaJugadores("jordi.x86-32", "kios.x86-32","Jordi","Kios" );
                 msg = r2warsStatic.r2w.json_output();
             }
-            else if (recv == "reset")
+            else if (recv == "start")
+            {
+                r2warsStatic.r2w.iniciaCombate();
+                msg = r2warsStatic.r2w.json_output();
+            }
+            else if (recv == "next")
+            {
+                r2warsStatic.r2w.stepCombate();
+                msg = r2warsStatic.r2w.json_output();
+            }
+            else if (recv == "reset_tournament")
             {
                 //r2warsStatic.r2w.btInit_Click();
                 r2warsStatic.ini.btLoadPlayer();
                 r2warsStatic.r2w.initmemoria();
                 msg = r2warsStatic.r2w.json_output();
             }
-            else if (recv == "start")
+            else if (recv == "start_tournament")
             {
-                //r2warsStatic.r2w.btAuto_Click();
-  
                 r2warsStatic.ini.btRunCombats();
                 msg = r2warsStatic.r2w.json_output();
             }
-            else if (recv == "stop")
+            else if (recv == "stop_tournament")
             {
                 r2warsStatic.r2w.stopProcess = true;
                 msg = r2warsStatic.r2w.json_output();

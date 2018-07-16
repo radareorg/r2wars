@@ -19,18 +19,10 @@ function timerFunc() {
 	
 }
 var clicked = false;
+var clicked1 = false;
 document.addEventListener('DOMContentLoaded', function () {
   $('reset').addEventListener('click', () => {
       socket.send("reset");
-      /*Query('reset', (res) => {
-      
-            try {
-                state = JSON.parse(res);
-                updateUI();
-            } catch (e) {
-                alert(e);
-            }
-        });*/
     });
   $('start').addEventListener('click', () => {
     if (clicked === false) {
@@ -51,9 +43,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
   });
   $('buffer').addEventListener('click', () => {
-
+      socket.send("reset_tournament");
   });
   $('lt').addEventListener('click', () => {
+      if (clicked1 === false) {
+          //clock = setInterval("timerFunc()", 50);
+          socket.send("start_tournament");
+          document.getElementById("lt").innerHTML = "stop t";
+          clicked1 = true;
+      }
+      else if (clicked1 === true) {
+          //window.clearInterval(clock);
+          document.getElementById("lt").innerHTML = "start t";
+          socket.send("stop_tournament");
+          clicked1 = false;
+      }
 
   });
   $('gt').addEventListener('click', () => {

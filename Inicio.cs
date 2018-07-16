@@ -20,19 +20,11 @@ namespace r2warsTorneo
         string[] actualcombatnames = { "", "" };
         string[] actualcombatwarriors = { "", "" };
 
-    
-        string rutaR2 = "radare2.exe";
-        string rutaRabin2 = "rasm2.exe";
         public string textBox1="";
         public string textBox2 ="";
         public Inicio()
         {
-            //InitializeComponent();
-            if (!OperatingSystem.IsWindows())
-            {
-                rutaR2 = "r2";
-                rutaRabin2 = "rasm2";
-            }
+
         }
         void BuildRounds()
         {
@@ -149,7 +141,7 @@ namespace r2warsTorneo
                 }
                 string tmp = string.Format("Iniciando combate {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
                 textBox1 += tmp + Environment.NewLine;
-                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], rutaR2, rutaRabin2);
+                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1]);
             }
             else
             {
@@ -184,7 +176,7 @@ namespace r2warsTorneo
         {
             int nround = e.round + 1;
             textBox1+= "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + Environment.NewLine;
-            r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], rutaR2, rutaRabin2);
+            r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1]);
 
 
         }
