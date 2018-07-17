@@ -5,13 +5,13 @@ using System.Linq;
 
 namespace r2warsTorneo
 {
-    public class Inicio 
+    public class Torneo
     {
         static List<TournamentTeam> teams = new List<TournamentTeam>();
         static List<TournamentRound> rounds = new List<TournamentRound>();
         static Dictionary<long, string> teamNames = new Dictionary<long, string>();
         static Dictionary<long, string> teamWarriors = new Dictionary<long, string>();
-        r2wars r2w;
+        r2wars r2w = null;
         RoundRobinPairingsGenerator generator;
         List<TournamentPairing> allcombats = new List<TournamentPairing>();
 
@@ -22,63 +22,31 @@ namespace r2warsTorneo
 
         public string textBox1="";
         public string textBox2 ="";
-        public Inicio()
+        public Torneo()
         {
-
+            r2w = r2warsStatic.r2w;
         }
-        void BuildRounds()
-        {
-            generator = new RoundRobinPairingsGenerator();
-            generator.Reset();
-            // Añadimos 10 jugadores
-            for (int n = 1; n <= 26; n++)
-            {
-                var team = new TournamentTeam(n, 0);
-                teams.Add(team);
-                teamNames.Add(n, string.Format("Player{0}", n));
-            }
-            // generamos todas las rondas.
-            while (true)
-            {
-                TournamentRound round = null;
-                generator.Reset();
-                generator.LoadState(teams, rounds);
-                round = generator.CreateNextRound(null);
-                if (round != null)
-                {
-                    rounds.Add(round);
-                }
-                else
-                {
-                    break;
-                }
-            }
-            foreach (TournamentRound round in rounds)
-            {
-                foreach (var pairing in round.Pairings)
-                {
-                    allcombats.Add(pairing);
-                }
-            }
-        }
-
+     
         void loadplayers()
         {
             allcombats.Clear();
-            //listBox1.Items.Clear();
             teamNames.Clear();
             teamWarriors.Clear();
             rounds.Clear();
             teams.Clear();
             ncombat = 0;
-      
-            if (r2w == null)
+            if (r2w!=null)
             {
-                r2w = r2warsStatic.r2w;
+                r2w.Event_combatEnd -= new MyHandler1(CombatEnd);
                 r2w.Event_combatEnd += new MyHandler1(CombatEnd);
+
+                r2w.Event_roundEnd -= new MyHandler1(RoundEnd);
                 r2w.Event_roundEnd += new MyHandler1(RoundEnd);
+
+                r2w.Event_roundExhausted -= new MyHandler1(RoundExhausted);
                 r2w.Event_roundExhausted += new MyHandler1(RoundExhausted);
             }
+
             r2w.nRound = 0;
             r2w.victorias[0] = 0;
             r2w.victorias[1] = 0;
@@ -146,7 +114,7 @@ namespace r2warsTorneo
             else
             {
                 textBox1+= "end " + DateTime.Now+Environment.NewLine;
-                r2w.sendevent(r2w.json_output());
+                r2w.send_draw_event(r2w.json_output());
             }
         }
 

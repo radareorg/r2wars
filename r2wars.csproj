@@ -63,7 +63,7 @@
     <Compile Include="clsEngine.cs" />
     <Compile Include="clsPipe.cs" />
     <Compile Include="CustomBootstrapper.cs" />
-    <Compile Include="Inicio.cs" />
+    <Compile Include="Torneo.cs" />
     <Compile Include="MainModule.cs" />
     <Compile Include="MyEvent.cs" />
     <Compile Include="r2warsWebSocket.cs" />

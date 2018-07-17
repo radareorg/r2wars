@@ -643,7 +643,10 @@ namespace r2warsTorneo
         }
         public string GetUserName(int nuser)
         {
-            return players[nuser].name;
+            if (players.Count > 0)
+                return players[nuser].name;
+            else
+                return "";
         }
 
         public int GetAddressProgram()

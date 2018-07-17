@@ -4,6 +4,7 @@ namespace r2warsTorneo
 {
     public class r2warsWebSocket : WebSocketBehavior
     {
+        
         protected override void OnMessage(MessageEventArgs e)
         {
             string recv = e.Data;
@@ -30,13 +31,13 @@ namespace r2warsTorneo
             else if (recv == "reset_tournament")
             {
                 //r2warsStatic.r2w.btInit_Click();
-                r2warsStatic.ini.btLoadPlayer();
+                r2warsStatic.torneo.btLoadPlayer();
                 r2warsStatic.r2w.initmemoria();
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "start_tournament")
             {
-                r2warsStatic.ini.btRunCombats();
+                r2warsStatic.torneo.btRunCombats();
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "stop_tournament")
@@ -59,10 +60,17 @@ namespace r2warsTorneo
             r2warsStatic.r2w.sync_var = false;
             Send(e.message);
         }
-   
+        protected override void OnClose(CloseEventArgs e)
+        {
+            base.OnClose(e);
+        }
+        static MyHandler1 h1; 
         protected override void OnOpen()
         {
-            r2warsStatic.r2w.Event_pinta += R2wars_EventPinta;
+            
+            r2warsStatic.r2w.Event_pinta -= h1;
+            h1 = new MyHandler1(R2wars_EventPinta);
+            r2warsStatic.r2w.Event_pinta += h1;
             base.OnOpen();
         }
     }

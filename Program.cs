@@ -8,7 +8,7 @@ namespace r2warsTorneo
     static public class r2warsStatic
     {
         static public r2wars r2w = new r2wars();
-        static public Inicio ini = new Inicio();
+        static public Torneo torneo = new Torneo();
     }
     class Program
     {
