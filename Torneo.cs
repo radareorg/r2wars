@@ -109,7 +109,7 @@ namespace r2warsTorneo
                 }
                 string tmp = string.Format("Iniciando combate {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
                 textBox1 += tmp + Environment.NewLine;
-                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1]);
+                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], true, false);
             }
             else
             {
@@ -144,9 +144,7 @@ namespace r2warsTorneo
         {
             int nround = e.round + 1;
             textBox1+= "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + Environment.NewLine;
-            r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1]);
-
-
+            //r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1]);
         }
 
         private void CombatEnd(object sender, MyEvent e)
@@ -159,9 +157,6 @@ namespace r2warsTorneo
             int ciclos = r2w.totalciclos;
             textBox1+= "Combat Winner: " + ganador + Environment.NewLine;
             ncombat++;
-            r2w.victorias[0] = 0;
-            r2w.victorias[1] = 0;
-            r2w.nRound = 0;
             drawstats();
             runnextcombat();
         }

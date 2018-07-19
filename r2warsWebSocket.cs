@@ -15,12 +15,17 @@ namespace r2warsTorneo
             }
             else if (recv == "reset")
             {
-                r2warsStatic.r2w.iniciaJugadores("jordi.x86-32", "kios.x86-32","Jordi","Kios" );
+                r2warsStatic.r2w.playcombat("jordi.x86-32", "kios.x86-32", "Jordi", "Kios", false, true);
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "start")
             {
                 r2warsStatic.r2w.iniciaCombate();
+                msg = r2warsStatic.r2w.json_output();
+            }
+            else if (recv == "stop")
+            {
+                r2warsStatic.r2w.StopCombate();
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "next")
@@ -42,7 +47,7 @@ namespace r2warsTorneo
             }
             else if (recv == "stop_tournament")
             {
-                r2warsStatic.r2w.stopProcess = true;
+                r2warsStatic.r2w.bStopProcess = true;
                 msg = r2warsStatic.r2w.json_output();
             }
             else if(recv=="moreflow")
@@ -68,9 +73,9 @@ namespace r2warsTorneo
         protected override void OnOpen()
         {
             
-            r2warsStatic.r2w.Event_pinta -= h1;
+            r2warsStatic.r2w.Event_draw -= h1;
             h1 = new MyHandler1(R2wars_EventPinta);
-            r2warsStatic.r2w.Event_pinta += h1;
+            r2warsStatic.r2w.Event_draw += h1;
             base.OnOpen();
         }
     }
