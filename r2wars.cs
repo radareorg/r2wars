@@ -265,8 +265,6 @@ namespace r2warsTorneo
             // Reiniciamos el juego
             Engine.ReiniciaGame(true);
             // Actualizamos la pantalla indicando que pinte los programas
-            update(0);
-            bDead = false;
             if (Event_roundExhausted != null)
             {
                 MyEvent e3 = new MyEvent();
@@ -276,6 +274,8 @@ namespace r2warsTorneo
                 e3.ciclos = totalciclos;
                 Event_roundExhausted(this, e3);
             }
+            update(0);
+            totalciclos = 0;
         }
         private bool RoundEnd()
         {
@@ -297,7 +297,6 @@ namespace r2warsTorneo
             if (nRound == 3 || victorias[1] == 2 || victorias[0] == 2)
             {
                 return true;
-
             }
             else
             {
@@ -325,6 +324,7 @@ namespace r2warsTorneo
                 e1.ciclos = totalciclos;
                 this.Event_combatEnd(this, e1);
             }
+             
         }
         private void ExecuteRoundInstruction()
         {
@@ -357,7 +357,7 @@ namespace r2warsTorneo
                         return;
                     }
                     totalciclos++;
-                    if (totalciclos>8000)
+                    if (totalciclos>  8000)
                     {
                         RoundExhausted();
                     }
@@ -389,6 +389,7 @@ namespace r2warsTorneo
                     if (totalciclos > 8000)
                     {
                         RoundExhausted();
+                        return;
                     }
                     ExecuteRoundInstruction();
                     update(1);

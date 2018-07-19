@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace r2warsTorneo
 {
@@ -22,12 +23,107 @@ namespace r2warsTorneo
 
         public string textBox1="";
         public string textBox2 ="";
+        bool bTournamentRun = false;
         public Torneo()
         {
             r2w = r2warsStatic.r2w;
         }
      
-        void loadplayers()
+        
+        void runnextcombat()
+        {
+            if (ncombat < allcombats.Count)
+            {
+                int j = 0;
+                foreach (var teamScore in allcombats[ncombat].TeamScores)
+                {
+                    actualcombatnames[j] = teamNames[teamScore.Team.TeamId];
+                    actualcombatwarriors[j] = teamWarriors[teamScore.Team.TeamId];
+                    actualcombatscore[j] = teamScore;
+                    actualcombatscore[j].Score += new HighestPointsScore(0);
+                    j++;
+                }
+                string tmp = string.Format("Iniciando combate {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
+                textBox1 += tmp + Environment.NewLine;
+                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], true, false);
+            }
+            else
+            {
+                textBox1+= "Tournament end " + DateTime.Now+Environment.NewLine;
+                bTournamentRun = false;
+                r2w.send_draw_event(r2w.json_output());
+            }
+        }
+
+        void drawstats()
+        {
+            textBox2= string.Format("Combat {0} / {1}", ncombat ,allcombats.Count) + Environment.NewLine;
+            var standings = generator.GenerateRankings();
+
+            foreach (var standing in standings)
+            {
+                string salida = string.Format("{0} {1} {2}", standing.Rank.ToString(), teamNames[standing.Team.TeamId], standing.ScoreDescription);
+                textBox2+= salida + Environment.NewLine;
+            }
+            r2w.send_draw_event(r2w.json_output());
+        }
+
+        private void RoundEnd(object sender, MyEvent e)
+        {
+           
+            int nround = e.round + 1;
+            textBox1+= "    Round-" + nround.ToString() + " " + r2w.Engine.players[e.ganador].name  + " Wins Cycles:" + e.ciclos.ToString() + Environment.NewLine;
+            if (actualcombatscore[e.ganador].Score!=null)
+                actualcombatscore[e.ganador].Score+= new HighestPointsScore(1);
+            r2w.send_draw_event(r2w.json_output());
+
+            Task t = Task.Factory.StartNew(() =>
+            {
+                int n = 10;
+                while ((n--) > 0)
+                {
+                    System.Threading.Thread.Sleep(100);
+                    Console.WriteLine("Round end Waiting ...");
+                }
+            });
+            t.Wait();
+
+
+        }
+
+        private void RoundExhausted(object sender, MyEvent e)
+        {
+            int nround = e.round + 1;
+            textBox1+= "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + Environment.NewLine;
+            //r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1]);
+        }
+
+        private void CombatEnd(object sender, MyEvent e)
+        {
+            string ganador = "";
+            if (r2w.victorias[0] == 2)
+                ganador = r2w.Engine.players[0].name;
+            if (r2w.victorias[1] == 2)
+                ganador = r2w.Engine.players[1].name;
+            int ciclos = r2w.totalciclos;
+            textBox1+= "Combat Winner: " + ganador + Environment.NewLine;
+            ncombat++;
+            drawstats();
+                Task t = Task.Factory.StartNew(() =>
+                {
+                    int n = 10;
+                    while ((n--) > 0)
+                    {
+                        System.Threading.Thread.Sleep(100);
+                        Console.WriteLine("Combat end Waiting ...");
+                    }
+                });
+                t.Wait();
+          
+            runnextcombat();
+        }
+
+        public void LoadTournamentPlayers()
         {
             allcombats.Clear();
             teamNames.Clear();
@@ -35,7 +131,7 @@ namespace r2warsTorneo
             rounds.Clear();
             teams.Clear();
             ncombat = 0;
-            if (r2w!=null)
+            if (r2w != null)
             {
                 r2w.Event_combatEnd -= new MyHandler1(CombatEnd);
                 r2w.Event_combatEnd += new MyHandler1(CombatEnd);
@@ -93,83 +189,22 @@ namespace r2warsTorneo
                 }
             }
         }
-   
-        void runnextcombat()
+
+        public void StopTournamentCombats()
         {
-            if (ncombat < allcombats.Count)
-            {
-                int j = 0;
-                foreach (var teamScore in allcombats[ncombat].TeamScores)
-                {
-                    actualcombatnames[j] = teamNames[teamScore.Team.TeamId];
-                    actualcombatwarriors[j] = teamWarriors[teamScore.Team.TeamId];
-                    actualcombatscore[j] = teamScore;
-                    actualcombatscore[j].Score += new HighestPointsScore(0);
-                    j++;
-                }
-                string tmp = string.Format("Iniciando combate {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
-                textBox1 += tmp + Environment.NewLine;
-                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], true, false);
-            }
-            else
-            {
-                textBox1+= "end " + DateTime.Now+Environment.NewLine;
-                r2w.send_draw_event(r2w.json_output());
-            }
+            r2w.StopCombate();
         }
-
-        void drawstats()
-        {
-            textBox2= string.Format("Combat {0} / {1}", ncombat ,allcombats.Count) + Environment.NewLine;
-            var standings = generator.GenerateRankings();
-
-            foreach (var standing in standings)
-            {
-                string salida = string.Format("{0} {1} {2}", standing.Rank.ToString(), teamNames[standing.Team.TeamId], standing.ScoreDescription);
-                textBox2+= salida + Environment.NewLine;
-            }
-        }
-
-        private void RoundEnd(object sender, MyEvent e)
+        public void RunTournamentCombats()
         {
            
-            int nround = e.round + 1;
-            textBox1+= "    Round-" + nround.ToString() + " " + r2w.Engine.players[e.ganador].name  + " Wins Cycles:" + e.ciclos.ToString() + Environment.NewLine;
-            if (actualcombatscore[e.ganador].Score!=null)
-                actualcombatscore[e.ganador].Score+= new HighestPointsScore(1);
-
-        }
-
-        private void RoundExhausted(object sender, MyEvent e)
-        {
-            int nround = e.round + 1;
-            textBox1+= "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + Environment.NewLine;
-            //r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1]);
-        }
-
-        private void CombatEnd(object sender, MyEvent e)
-        {
-            string ganador = "";
-            if (r2w.victorias[0] == 2)
-                ganador = r2w.Engine.players[0].name;
-            if (r2w.victorias[1] == 2)
-                ganador = r2w.Engine.players[1].name;
-            int ciclos = r2w.totalciclos;
-            textBox1+= "Combat Winner: " + ganador + Environment.NewLine;
-            ncombat++;
-            drawstats();
-            runnextcombat();
-        }
-
-        public void btLoadPlayer()
-        {
-            loadplayers();
-        }
-
-        public void btRunCombats()
-        {
-            textBox1 = "start " + DateTime.Now+Environment.NewLine;
-            runnextcombat();
+            if (bTournamentRun == false)
+            {
+                textBox1 = "Tournament start " + DateTime.Now + Environment.NewLine;
+                bTournamentRun = true;
+                runnextcombat();
+            }
+            else
+                r2w.iniciaCombate();
         }
     }
 }

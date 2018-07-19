@@ -35,19 +35,18 @@ namespace r2warsTorneo
             }
             else if (recv == "reset_tournament")
             {
-                //r2warsStatic.r2w.btInit_Click();
-                r2warsStatic.torneo.btLoadPlayer();
+                r2warsStatic.torneo.LoadTournamentPlayers();
                 r2warsStatic.r2w.initmemoria();
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "start_tournament")
             {
-                r2warsStatic.torneo.btRunCombats();
+                r2warsStatic.torneo.RunTournamentCombats();
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "stop_tournament")
             {
-                r2warsStatic.r2w.bStopProcess = true;
+                r2warsStatic.torneo.StopTournamentCombats();
                 msg = r2warsStatic.r2w.json_output();
             }
             else if(recv=="moreflow")
