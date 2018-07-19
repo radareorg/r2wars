@@ -15,7 +15,7 @@ namespace r2warsTorneo
             }
             else if (recv == "reset")
             {
-                r2warsStatic.r2w.playcombat("jordi.x86-32", "kios.x86-32", "Jordi", "Kios", false, true);
+                r2warsStatic.r2w.playcombat("jordi.x86-32", "kios.x86-32", "Jordi", "Kios", false, false);
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "start")
