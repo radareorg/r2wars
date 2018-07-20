@@ -12,9 +12,11 @@ namespace r2warsTorneo
         public string dasm = "";
         public string regs = "";
         public string mem = "";
+        public string txtmemoria = "";
         public int cycles = 0;
         public bool dead = false;
-        public clsinfo(string pc, string ins, string dasm, string regs, string mem, int cycles)
+
+        public clsinfo(string pc, string ins, string dasm, string regs, string mem, int cycles, string txtmemoria)
         {
             this.pc = pc;
             this.ins = ins;
@@ -22,6 +24,7 @@ namespace r2warsTorneo
             this.regs = regs;
             this.mem = mem;
             this.cycles = cycles;
+            this.txtmemoria = txtmemoria;
         }
         public int ipc()
         {
@@ -75,7 +78,7 @@ namespace r2warsTorneo
             this.cycles = ciclos;
             this.cyclesfixed = ciclos;
             this.log = new List<clsinfo>();
-            this.actual = new clsinfo("", "", "", "", "", 0);
+            this.actual = new clsinfo("", "", "", "", "", 0,"");
             idxlog = -1;
         }
 
@@ -678,7 +681,7 @@ namespace r2warsTorneo
 
     
 
-        public bool stepInfoNew()
+        public bool stepInfoNew(string txtmemoria)
         {
             // Obtenemos los indices del jugador actual y el otro
             int thisplayer = uidx;
@@ -777,7 +780,7 @@ namespace r2warsTorneo
             }
 
             // Añadimos al log la instruccion que se ejecuto
-            players[thisplayer].logAdd(new clsinfo(players[thisplayer].actual.pc, players[thisplayer].actual.ins, players[thisplayer].actual.dasm, players[thisplayer].actual.regs, players[thisplayer].actual.mem, players[thisplayer].cycles+1));
+            players[thisplayer].logAdd(new clsinfo(players[thisplayer].actual.pc, players[thisplayer].actual.ins, players[thisplayer].actual.dasm, players[thisplayer].actual.regs, players[thisplayer].actual.mem, players[thisplayer].cycles+1, txtmemoria));
 
 
             // Actualizamos los ciclos y registros 

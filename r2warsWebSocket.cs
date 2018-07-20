@@ -13,20 +13,16 @@ namespace r2warsTorneo
             {
                 msg = r2warsStatic.r2w.json_output();
             }
-            else if (recv == "reset")
+            else if (recv == "prevlog")
             {
-                r2warsStatic.r2w.playcombat("jordi.x86-32", "kios.x86-32", "Jordi", "Kios", false, false);
-                msg = r2warsStatic.r2w.json_output();
+                r2warsStatic.r2w.prevLog();
+                
+                msg = r2warsStatic.r2w.json_output(0);
             }
-            else if (recv == "start")
+            else if (recv == "nextlog")
             {
-                r2warsStatic.r2w.iniciaCombate();
-                msg = r2warsStatic.r2w.json_output();
-            }
-            else if (recv == "stop")
-            {
-                r2warsStatic.r2w.StopCombate();
-                msg = r2warsStatic.r2w.json_output();
+                r2warsStatic.r2w.nextLog();
+                msg = r2warsStatic.r2w.json_output(0);
             }
             else if (recv == "next")
             {

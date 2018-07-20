@@ -28,11 +28,11 @@ document.addEventListener('DOMContentLoaded', function () {
     
   });
   $('lt').addEventListener('click', () => {
-      
+      socket.send("prevlog");
 
   });
   $('gt').addEventListener('click', () => {
-
+      socket.send("nextlog");
   });
   updateUI();
 });

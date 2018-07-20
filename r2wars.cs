@@ -24,7 +24,7 @@ namespace r2warsTorneo
         public clsEngine Engine = null;
         private Thread workerThread = null;
         private delegate void UpdateStatusDelegate(int n);
-        private UpdateStatusDelegate updateStatusDelegate = null;
+
         bool bThreadIni = false;
         public bool bStopProcess = false;
         public event MyHandler1 Event_draw;
@@ -38,7 +38,6 @@ namespace r2warsTorneo
 
         bool bInCombat = false;
         bool bSingleRound = false;
-        //bool fincombate = false;
         public int[] victorias = { 0, 0 };
         public int totalciclos = 0;
         public int nRound = 0;
@@ -46,6 +45,7 @@ namespace r2warsTorneo
         string[] memoria = new string[1024];
         string[] rr = { "", "" };
         string[] dd = { "", "" };
+        string[] mm = { "", "" };
         string status = "Idle";
         public  bool sync_var = false;
         public r2wars()
@@ -74,7 +74,7 @@ namespace r2warsTorneo
             }
             e1 = null;
         }
-        public string json_output()
+        public string json_output(int nPlayerLog = -1)
         {
             string torneo;
             if (r2warsStatic.torneo.bTournamentRun)
@@ -84,7 +84,14 @@ namespace r2warsTorneo
             string clasi = r2warsStatic.torneo.stats.Replace("\n", "\\n").Replace("\r", "");
             string username1 = Engine.GetUserName(0);
             string username2 = Engine.GetUserName(1);
-            string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\\n\\n\\n" + clasi + "\",\"name\":\""+username1+"\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\",\"name\":\""+username2+"\"},\"memory\":[" + getmemoria() + "],\"console\":\""+torneo+"\",\"status\":\"" + status + "\"}";
+            string memoria = "";
+            if (nPlayerLog!=-1)
+            {
+                memoria = mm[nPlayerLog];
+            }
+            else
+                memoria = getmemoria();
+            string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\\n\\n\\n" + clasi + "\",\"name\":\""+username1+"\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\",\"name\":\""+username2+"\"},\"memory\":[" + memoria + "],\"console\":\""+torneo+"\",\"status\":\"" + status + "\"}";
             //salida = "{\"player1\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"\\n\\n\\n" + clasi + "\",\"name\":\"" + username1 + "\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"\",\"name\":\"" + username2 + "\"},\"memory\":[" + getmemoria() + "],\"console\":\"\",\"status\":\"" + status + "\"}";
 
             return salida;
@@ -130,30 +137,18 @@ namespace r2warsTorneo
         }
         void drawslogcreen(int nplayer, clsinfo actual)
         {
-            /*RichTextBox[] r = { richAsmP0, richAsmP1 };
-            Label[] l = { lblRegsP0, lblRegsP1 };
-            Label[] lplayer = { lblPlayer0, lblPlayer1 };
-            lplayer[nplayer].Text = Engine.GetUserName(nplayer);
-            r[nplayer].SelectionColor = Color.FromArgb(0, 192, 0);
-            r[nplayer].SelectionBackColor = Color.Black;
-       
-
-            string newdasm = "Cycles:" + actual.cycles.ToString() + "\nActual Instruction: \n" + actual.ins + "\n\n" + actual.dasm;
-            r[nplayer].Text = newdasm;
-            // Pintamos el desensamblado
-            int i = newdasm.IndexOf(actual.ins, 35);
-            if (i != -1)
+            lock (dd)
             {
-                int fin = newdasm.IndexOf("\n", i);
-                r[nplayer].SelectionStart = i;
-                r[nplayer].SelectionLength = fin - i;
-                r[nplayer].SelectionBackColor = Color.FromArgb(0, 192, 0);
-                r[nplayer].SelectionColor = Color.White;
+                dd[nplayer] = "Cycles:" + actual.cycles.ToString() + "\nActual Instruction: \n" + actual.ins + "\n\n" + actual.dasm;
             }
-            // pintamos los registros
-            l[nplayer].Text = actual.formatregs();
-           */
-
+            lock (rr)
+            {
+                rr[nplayer] = actual.formatregs();
+            }
+            lock(mm)
+            {
+                mm[nplayer] = actual.txtmemoria;
+            }
 
 
         }
@@ -162,7 +157,7 @@ namespace r2warsTorneo
             //RichTextBox[] r = { richAsmP0, richAsmP1 };
             //Label[] l = { lblRegsP0, lblRegsP1 };
             //Label[] lplayer = { lblPlayer0, lblPlayer1 };
-            string username = Engine.GetUserName(nplayer);
+            //string username = Engine.GetUserName(nplayer);
             //lplayer[nplayer].Text = Engine.GetUserName(nplayer);
             //r[nplayer].SelectionColor = Color.FromArgb(0, 192, 0);
             //r[nplayer].SelectionBackColor = Color.Black;
@@ -242,7 +237,7 @@ namespace r2warsTorneo
                 {
                     // Dibujamos la info del jugador que relizo la instruccion de muerte
                     clsinfo ins = Engine.players[Engine.thisplayer].logGetPrev();
-                    drawslogcreen(Engine.thisplayer, ins);
+                    //drawslogcreen(Engine.thisplayer, ins);
                     drawplayerturn(Engine.thisplayer);
                 }
                 else
@@ -339,7 +334,7 @@ namespace r2warsTorneo
             if (Engine.cyleszero())
             {
                 // Realizamos el STEP
-                bDead = Engine.stepInfoNew();
+                bDead = Engine.stepInfoNew(getmemoria());
                 if (bWait)
                 {
                     update(1);
@@ -356,8 +351,7 @@ namespace r2warsTorneo
             }
             else
             {
-                Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].cycles + 1));
-                // hacemos el switch del user sin llamar al pipe es solo para refrescar
+                Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].cycles + 1, getmemoria()));
             }
             Engine.switchUserIdx();
 
@@ -498,7 +492,7 @@ namespace r2warsTorneo
         }
 
 
-        private void btPrev_Click()
+        public void prevLog()
         {
             clsinfo tmp = Engine.players[1].logGetPrev();
             if (tmp != null)
@@ -506,8 +500,9 @@ namespace r2warsTorneo
             tmp = Engine.players[0].logGetPrev();
             if (tmp!=null)
                 drawslogcreen(0, tmp);
+
         }
-        private void btNext_Click()
+        public void nextLog()
         {
             clsinfo tmp = Engine.players[1].logGetNext();
             if (tmp != null)
