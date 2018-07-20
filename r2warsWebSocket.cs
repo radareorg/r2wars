@@ -26,7 +26,7 @@ namespace r2warsTorneo
             }
             else if (recv == "next")
             {
-                r2warsStatic.r2w.stepCombate();
+                r2warsStatic.torneo.StepTournamentCombats();
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "reset_tournament")
@@ -37,7 +37,7 @@ namespace r2warsTorneo
             }
             else if (recv == "start_tournament")
             {
-                r2warsStatic.torneo.RunTournamentCombats();
+                r2warsStatic.torneo.RunTournamentCombats(true);
                 msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "stop_tournament")

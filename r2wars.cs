@@ -36,7 +36,7 @@ namespace r2warsTorneo
         string[] cRead =  { "q", "y" };
         string[] cWrite = { "v", "o" };
 
-        bool bInCombat = false;
+        public bool bInCombat = false;
         bool bSingleRound = false;
         public int[] victorias = { 0, 0 };
         public int totalciclos = 0;
@@ -491,7 +491,7 @@ namespace r2warsTorneo
                 this.bStopProcess = true;
         }
 
-
+        int indexlog = 0;
         public void prevLog()
         {
             clsinfo tmp = Engine.players[1].logGetPrev();

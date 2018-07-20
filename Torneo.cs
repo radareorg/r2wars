@@ -102,7 +102,7 @@ namespace r2warsTorneo
             t.Wait();
             bCombatEnd = true;
         }
-        void runnextcombat()
+        void runnextcombat(bool startcombat)
         {
             if (ncombat < allcombats.Count)
             {
@@ -120,7 +120,7 @@ namespace r2warsTorneo
                 fullCombatLog += tmp + Environment.NewLine;
                 bCombatEnd = false;
 
-                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], true, false);
+                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], startcombat, false);
             }
             else
             {
@@ -199,7 +199,17 @@ namespace r2warsTorneo
         {
             r2w.StopCombate();
         }
-        public void RunTournamentCombats()
+        public void StepTournamentCombats()
+        {
+            if (bTournamentRun == false)
+            {
+                RunTournamentCombats(false);
+                r2w.bInCombat = true;
+            }
+            else
+                r2w.stepCombate();
+        }
+        public void RunTournamentCombats(bool startcombat)
         {
            
             if (bTournamentRun == false)
@@ -208,10 +218,17 @@ namespace r2warsTorneo
                 bTournamentRun = true;
                 Task t = Task.Factory.StartNew(() =>
                 {
+                    bool firsttime = true;
+
                     while (bTournamentRun)
                     {
                         if (bCombatEnd == true)
-                            runnextcombat();
+                        {
+                            if (firsttime && !startcombat)
+                                runnextcombat(false);
+                            else
+                                runnextcombat(true);
+                        }
                         else
                             Thread.Sleep(100);
                     }
