@@ -437,6 +437,7 @@ namespace r2warsTorneo
 
         public bool cyleszero()
         {
+        
             if (players[this.uidx].cycles == 0)
             {
                 players[this.uidx].cycles = -1;
@@ -748,7 +749,7 @@ namespace r2warsTorneo
             else
                 otherquery = string.Format("pD {0} @ {1}", players[otherplayer].size, players[otherplayer].orig);
 
-            // Procesamos el output de redare y obtenemos los 2 desensamblados
+            // Procesamos el output de radare y obtenemos los 2 desensamblados
             string bothdasm = this.r2.RunCommand(query + ";?e split;" + otherquery).Replace("\r", "");
             string[] tmpdasm = bothdasm.Split(new string[] { "split" }, StringSplitOptions.None);
             string dasm = tmpdasm[0];

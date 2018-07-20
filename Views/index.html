@@ -1,40 +1,22 @@
 ﻿<html>
 
 <script>
-function timerFunc() {
-    Query('next', (res) => {
-      try {
-        state = JSON.parse(res);
-        if (state.status.indexOf("Stopped")!==-1)
-        {
-            window.clearInterval(clock);
-            document.getElementById("start").innerHTML ="start";
-            clicked = false;
-        }
-        updateUI();
-      } catch (e) {
-        alert(e);
-      }
-    });	
-	
-}
 var clicked = false;
 var clicked1 = false;
 document.addEventListener('DOMContentLoaded', function () {
   $('reset').addEventListener('click', () => {
-      socket.send("reset");
+      socket.send("reset_tournament");
+      document.getElementById("start").innerHTML = "start";
     });
   $('start').addEventListener('click', () => {
     if (clicked === false) {
-        //clock = setInterval("timerFunc()", 50);
-        socket.send("start");
-        document.getElementById("start").innerHTML ="stop";
+        socket.send("start_tournament");
+        document.getElementById("start").innerHTML ="pause";
         clicked = true;
 	}
 	else if (clicked === true) {
-		//window.clearInterval(clock);
-        document.getElementById("start").innerHTML ="start";
-        socket.send("stop");
+        document.getElementById("start").innerHTML ="continue";
+        socket.send("stop_tournament");
         clicked = false;
     }
   });
@@ -43,21 +25,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   });
   $('buffer').addEventListener('click', () => {
-      socket.send("reset_tournament");
+    
   });
   $('lt').addEventListener('click', () => {
-      if (clicked1 === false) {
-          //clock = setInterval("timerFunc()", 50);
-          socket.send("start_tournament");
-          document.getElementById("lt").innerHTML = "stop t";
-          clicked1 = true;
-      }
-      else if (clicked1 === true) {
-          //window.clearInterval(clock);
-          document.getElementById("lt").innerHTML = "start t";
-          socket.send("stop_tournament");
-          clicked1 = false;
-      }
+      
 
   });
   $('gt').addEventListener('click', () => {
@@ -102,12 +73,12 @@ state = {
     name: '',
   },
   memory: [
-    'rR',
-    'gW',
     '',
-    'bX',
+    '',
+    '',
+    '',
   ],
-  console: '...',
+  console: '[r2wars]',
   status: 'idle'
 };
 }

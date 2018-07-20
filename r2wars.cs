@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 public static class OperatingSystem
 {
@@ -75,11 +76,17 @@ namespace r2warsTorneo
         }
         public string json_output()
         {
-            string torneo =  "Total Ciclos:" + totalciclos+"\\n"+ r2warsStatic.torneo.textBox1.Replace("\n", "\\n").Replace("\r","");
-            string clasi = r2warsStatic.torneo.textBox2.Replace("\n", "\\n").Replace("\r", "");
+            string torneo;
+            if (r2warsStatic.torneo.bTournamentRun)
+                torneo =  "Total Ciclos:" + totalciclos+"\\n"+ r2warsStatic.torneo.actualCombatLog.Replace("\n", "\\n").Replace("\r","");
+            else
+                torneo = "Total Ciclos:" + totalciclos + "\\n" + r2warsStatic.torneo.fullCombatLog.Replace("\n", "\\n").Replace("\r", "");
+            string clasi = r2warsStatic.torneo.stats.Replace("\n", "\\n").Replace("\r", "");
             string username1 = Engine.GetUserName(0);
             string username2 = Engine.GetUserName(1);
             string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\\n\\n\\n" + clasi + "\",\"name\":\""+username1+"\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\",\"name\":\""+username2+"\"},\"memory\":[" + getmemoria() + "],\"console\":\""+torneo+"\",\"status\":\"" + status + "\"}";
+            //salida = "{\"player1\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"\\n\\n\\n" + clasi + "\",\"name\":\"" + username1 + "\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"\",\"name\":\"" + username2 + "\"},\"memory\":[" + getmemoria() + "],\"console\":\"\",\"status\":\"" + status + "\"}";
+
             return salida;
         }
         public void initmemoria()
@@ -291,7 +298,7 @@ namespace r2warsTorneo
                 Event_roundEnd(this, e2);
             }
             nRound++;
-            totalciclos = 0;
+
             // MessageBox.Show("Gana jugador: " + Engine.players[Engine.otherplayer].name);
             victorias[Engine.otherplayer]++;
             if (nRound == 3 || victorias[1] == 2 || victorias[0] == 2)
@@ -301,6 +308,7 @@ namespace r2warsTorneo
             else
             {
                 // Reiniciamos el juego
+                totalciclos = 0;
                 if (!bSingleRound)
                 {
                     Engine.ReiniciaGame(true);
@@ -326,19 +334,33 @@ namespace r2warsTorneo
             }
              
         }
-        private void ExecuteRoundInstruction()
+        private void ExecuteRoundInstruction(bool bWait)
         {
             if (Engine.cyleszero())
             {
                 // Realizamos el STEP
                 bDead = Engine.stepInfoNew();
+                if (bWait)
+                {
+                    update(1);
+                    Task t = Task.Factory.StartNew(() =>
+                    {
+                        int n = 2;
+                        while ((n--) > 0)
+                        {
+                            System.Threading.Thread.Sleep(1);
+                        }
+                    });
+                    t.Wait();
+                }
             }
             else
             {
                 Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].cycles + 1));
                 // hacemos el switch del user sin llamar al pipe es solo para refrescar
-                Engine.switchUserIdx();
             }
+            Engine.switchUserIdx();
+
         }
 
         void gameloop()
@@ -361,8 +383,7 @@ namespace r2warsTorneo
                     {
                         RoundExhausted();
                     }
-                    ExecuteRoundInstruction();
-                    update(1);
+                    ExecuteRoundInstruction(true);
                 }
                 bool bAllRoundEnd = RoundEnd();
                 if (bAllRoundEnd || bSingleRound)
@@ -376,7 +397,6 @@ namespace r2warsTorneo
             bThreadIni = false;
             bStopProcess = false;
             CombatEnd();
-   
 
         }
         public void stepCombate()
@@ -391,7 +411,7 @@ namespace r2warsTorneo
                         RoundExhausted();
                         return;
                     }
-                    ExecuteRoundInstruction();
+                    ExecuteRoundInstruction(false);
                     update(1);
                 }
                 else
@@ -446,7 +466,6 @@ namespace r2warsTorneo
             {
                 bThreadIni = true;
                 // Initialise and start worker thread
-                updateStatusDelegate = new UpdateStatusDelegate(this.update);
                 workerThread = new Thread(new ThreadStart(this.gameloop));
                 workerThread.Start();
             }
