@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   });
   $('buffer').addEventListener('click', () => {
-    
+      on();
   });
   $('lt').addEventListener('click', () => {
       socket.send("prevlog");
@@ -54,9 +54,17 @@ socket.onmessage = function (evt) {
     //alert(evt.data);
     if (evt.data !== "none") {
 
-        state = JSON.parse(evt.data);
-        updateUI();
-        socket.send("moreflow");
+        if (evt.data == "on") {
+            on();
+        }
+        else if (evt.data == "off") {
+            off();
+        }
+        else {
+            state = JSON.parse(evt.data);
+            updateUI();
+            //socket.send("moreflow");
+        }
     }
 };
 
@@ -79,7 +87,8 @@ state = {
     '',
   ],
   console: '[r2wars]',
-  status: 'idle'
+  status: 'idle',
+  scores: '1\n2\3\n'
 };
 }
 
@@ -94,6 +103,8 @@ function updateUI() {
   $('code2').innerHTML = state.player2.code;
   $('player1').innerHTML = state.player1.name;
   $('player2').innerHTML = state.player2.name;
+  $('scores').innerHTML = state.scores;
+
 }
 
 function addrForRow(x) {
@@ -182,7 +193,13 @@ function Ajax(method, uri, body, fn) {
         };
         x.send(null);
 }
+function on() {
+    document.getElementById("overlay").style.display = "block";
+}
 
+function off() {
+    document.getElementById("overlay").style.display = "none";
+}
 </script>
 
 <style>
@@ -278,9 +295,47 @@ tr {
 .memtable {
   font-size: 10px;
 }
+
+.overlay {
+    display: none;
+    top: 1%;
+    left: 30%;
+    right: 30%;
+    bottom: 27%;
+    background-color:rgba(0, 0, 0, 0.9);
+    z-index: 2;
+    cursor: pointer;
+    position: absolute;
+    border-radius: 6px;
+    border: 1px solid #a0a0a0
+}
+
+.text{
+    position: absolute;
+    top: 4%;
+    left: 50%;
+    font-size: 40px;
+    color: green;
+    transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%);
+}
+.text1{
+    position: absolute;
+    top: 14%;
+    left: 50%;
+    font-size: 20px;
+    color: green;
+    transform: translate(-50%,0%);
+    -ms-transform: translate(-50%,0%);
+    white-space: pre;
+}
 </style>
 <body>
+<div id="overlay" class="overlay" onclick="off()">
+    <div class="text">Score Board</div>
+    <div id="scores" class="text1"></div>
 
+</div>
 <table style="width:100%;height:100%">
 <tr>
 

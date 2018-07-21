@@ -43,6 +43,8 @@ namespace r2warsTorneo
                 stats+= salida + Environment.NewLine;
             }
             r2w.send_draw_event(r2w.json_output());
+            r2w.send_draw_event("on");
+    
         }
 
         private void RoundEnd(object sender, MyEvent e)
@@ -100,6 +102,7 @@ namespace r2warsTorneo
                 }
             });
             t.Wait();
+            r2w.send_draw_event("off");
             bCombatEnd = true;
         }
         void runnextcombat(bool startcombat)
