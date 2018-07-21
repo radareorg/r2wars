@@ -154,35 +154,24 @@ namespace r2warsTorneo
         }
         void drawscreen(int nplayer)
         {
-            //RichTextBox[] r = { richAsmP0, richAsmP1 };
-            //Label[] l = { lblRegsP0, lblRegsP1 };
-            //Label[] lplayer = { lblPlayer0, lblPlayer1 };
-            //string username = Engine.GetUserName(nplayer);
-            //lplayer[nplayer].Text = Engine.GetUserName(nplayer);
-            //r[nplayer].SelectionColor = Color.FromArgb(0, 192, 0);
-            //r[nplayer].SelectionBackColor = Color.Black;
             // seleccionamos el offset actual y lo pintamos invertido
+            string dasm = Engine.players[nplayer].actual.dasm;
+            int i = dasm.IndexOf(Engine.players[nplayer].actual.ins);
+            if (i != -1)
+            {
+                dasm = dasm.Insert(i + Engine.players[nplayer].actual.ins.Length, "</span>");
+                dasm = dasm.Insert(i, "<span class='s'>");
+            }
+
             lock (dd)
             {
-                dd[nplayer] = "Cycles:" + Engine.players[nplayer].cycles.ToString() + "\nActual Instruction: \n" + Engine.players[nplayer].actual.ins + "\n\n" + Engine.players[nplayer].actual.dasm;
+                dd[nplayer] = "Cycles:" + Engine.players[nplayer].cycles.ToString() + "\nActual Instruction: \n" + Engine.players[nplayer].actual.ins + "\n\n" + dasm; 
             }
-            //r[nplayer].Text = newdasm;
-            // Pintamos el desensamblado
-            //int i = newdasm.IndexOf(Engine.players[nplayer].actual.ins, 35);
-            //if (i != -1)
-            //{
-            //  int fin = newdasm.IndexOf("\n", i);
-            //  r[nplayer].SelectionStart = i;
-            //r[nplayer].SelectionLength = fin - i;
-            //r[nplayer].SelectionBackColor = Color.FromArgb(0, 192, 0);
-            //r[nplayer].SelectionColor = Color.White;
-            //}
-            // pintamos los registros
             lock (rr)
             {
                 rr[nplayer] = Engine.players[nplayer].actual.formatregs();
             }
-            //l[nplayer].Text = Engine.players[nplayer].actual.formatregs();
+
             if (Engine.players[nplayer].log.Count > 0)
             {
                 int oldPC = Engine.players[nplayer].log[Engine.players[nplayer].log.Count - 1].ipc();
@@ -197,7 +186,7 @@ namespace r2warsTorneo
                 pinta(aPC, pColor[nplayer], "X");
             }
         }
-        void drawmemaccess(int nplayer)//Dictionary<int, int> dicMemRead, Dictionary<int, int> dicMemWrite)
+        void drawmemaccess(int nplayer)
         {
             Dictionary<int, int> dicMemRead = Engine.GetMemAccessReadDict(Engine.players[nplayer].actual.mem);
             Dictionary<int, int> dicMemWrite = Engine.GetMemAccessWriteDict(Engine.players[nplayer].actual.mem);

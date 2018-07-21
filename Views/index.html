@@ -65,12 +65,12 @@ state = {
   player1: {
     regs: '',
     code: '',
-    name: '',
+    name: 'player1',
   },
   player2: {
     regs: '',
     code: '',
-    name: '',
+    name: 'player2',
   },
   memory: [
     '',
@@ -219,15 +219,31 @@ button {
   white-space: pre;
   overflow-y: scroll;
 }
-
-.console2 {
-  background-color:#c0c0c0;
-  color:black;
+.console1 {
+  height: 200px;
+  background-color:black;
+  color:white;
   font-family: Courier New;
   font-weight:bold;
   white-space: pre;
 }
 
+.console2 {
+  height: 400px;
+  background-color:black;
+  color:green;
+  font-family: Courier New;
+  font-weight:bold;
+  white-space: pre;
+}
+
+.s {
+  background-color:green;
+  color:black;
+  font-family: Courier New;
+  font-weight:bold;
+  white-space: pre;
+}
 body {
   background-color:#c0c0c0;
 }
@@ -237,7 +253,7 @@ td {
   border: 1px solid #a0a0a0;
 }
 div {
-  font-family: Courer New;
+  font-family: Courier New;
 }
 tr {
   background-color:#e0e0e0;
@@ -269,18 +285,21 @@ tr {
 <tr>
 
 <td style="width:30%">
- <table style="height:100%;width:100%">
- <tr>
-  <td class="player1" id=player1>Player 1</td>
- </tr>
- <tr style="height:100%">
-<td valign=top>
-<div class=console id=regs1>regs</div>
-<div class=console2 id=code1>code</div>
+    <table style="height:100%;width:100%">
+        <tr>
+            <td class="player1" id=player1>Player 1</td>
+        </tr>
+        <tr style="height:100%">
+             <td valign=top>
+                <div class=console1 id=regs1>regs</div>
+                <div style="border: 1px solid #a0a0a0"></div>
+                <div class=console2 id=code1>code</div>
+            </td>
+        </tr>
+    </table>
 </td>
- </tr>
- </table>
-</td>
+
+
 
 <td style="width:30%">
  <table style="height:100%;width:100%">
@@ -311,17 +330,18 @@ tr {
 </td>
 
 <td style="width:30%">
- <table style="height:100%;width:100%">
- <tr>
-  <td class="player2" id=player2>Player 2</td>
- </tr>
- <tr style="height:100%">
-<td valign=top height="100%">
-<div class=console id=regs2>regs</div>
-<div class=console2 id=code2>code</div>
-</td>
- </tr>
- </table>
+    <table style="height:100%;width:100%">
+         <tr>
+            <td class="player2" id=player2>Player 2</td>
+         </tr>
+         <tr style="height:100%">
+            <td valign=top height="100%">
+                <div class=console1 id=regs2>regs</div>
+                <div style="border: 1px solid #a0a0a0"></div>
+                <div class=console2 id=code2>code</div>
+            </td>
+         </tr>
+    </table>
 </td>
 
 </tr>
