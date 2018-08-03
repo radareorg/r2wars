@@ -1,4 +1,4 @@
-bal 4 ; getpc
+bal 0 + getpc
 getpc:
   move v0, ra
   lui v1, 1
