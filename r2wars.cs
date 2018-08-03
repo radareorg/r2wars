@@ -412,7 +412,8 @@ namespace r2warsTorneo
         public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2)
         {
             initmemoria();
-            string arch = "x86";
+            //string arch = "x86";
+            string arch = "arm";
             string res = Engine.Init(new string[] {
                                                rutaWarrior1,
                                                rutaWarrior2

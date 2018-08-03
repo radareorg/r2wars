@@ -159,7 +159,11 @@ namespace r2warsTorneo
             fullCombatLog = "";
 
             string[] files = Directory.GetFiles(@".");// fbd.SelectedPath);
-            string[] a = files.Where(p => p.EndsWith(".x86-32")).ToArray();
+            string extension = ".asm"; //".x86-32"
+            //string[] a = files.Where(p => p.EndsWith(".x86-32")).ToArray();
+
+            string[] a = files.Where(p => p.EndsWith(extension)).ToArray();
+
             //listBox1.Items.AddRange(a);
             Console.WriteLine("cargados " + a.Count().ToString() + " archivos");
             generator = new RoundRobinPairingsGenerator();
@@ -170,7 +174,7 @@ namespace r2warsTorneo
                 var team = new TournamentTeam(n, 0);
                 teams.Add(team);
                 string tmp = Path.GetFileName(a[n]);
-                teamNames.Add(n, tmp.Substring(0, tmp.IndexOf(".x86-32")));
+                teamNames.Add(n, tmp.Substring(0, tmp.IndexOf(extension)));
                 teamWarriors.Add(n, a[n]);
                 n++;
             }

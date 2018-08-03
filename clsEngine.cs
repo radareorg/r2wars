@@ -208,12 +208,16 @@ namespace r2warsTorneo
             System.Random rnd = new System.Random();
             List<int> rand = new List<int>();
             int addr = rnd.Next(0, this.memsize - this.maxprogsize);
+            if (addr % 4 != 0)
+                addr -= addr % 4;
             rand.Add(addr);
             int ini = addr;
             int fin = addr + maxprogsize;
             while (true)
             {
                 addr = rnd.Next(0, this.memsize - this.maxprogsize);
+                if (addr % 4 != 0)
+                    addr -= addr % 4;
                 if ((addr < ini && addr + maxprogsize < ini) || (addr > fin))
                 {
                     rand.Add(addr);
@@ -249,8 +253,8 @@ namespace r2warsTorneo
                 else if (arch == "arm")
                 {
                     this.r2.RunCommand("e asm.arch=arm");
-                    this.r2.RunCommand("e asm.bits=64");
-                    rasm2param = "-a arm -b 64";
+                    this.r2.RunCommand("e asm.bits=32");
+                    rasm2param = "-a arm -b 32";
                 }
                 else if (arch == "gb")
                 {
