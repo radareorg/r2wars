@@ -408,12 +408,12 @@ namespace r2warsTorneo
             }
 
         }
-
-        public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2)
+  
+        public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, clsEngine.eArch arch)
         {
             initmemoria();
             //string arch = "x86";
-            string arch = "arm";
+            //string arch = "arm";
             string res = Engine.Init(new string[] {
                                                rutaWarrior1,
                                                rutaWarrior2
@@ -455,9 +455,9 @@ namespace r2warsTorneo
             }
 
         }
-        public bool playcombat(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, bool bIniciaCombate, bool bSingleRound)
+        public bool playcombat(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, bool bIniciaCombate, bool bSingleRound, clsEngine.eArch arch)
         {
-            if (iniciaJugadores(rutaWarrior1, rutaWarrior2, nameWarrior1,nameWarrior2))
+            if (iniciaJugadores(rutaWarrior1, rutaWarrior2, nameWarrior1, nameWarrior2, arch))
             {
                 // ejecutamos el combate
 

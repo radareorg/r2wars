@@ -138,8 +138,31 @@ namespace r2warsTorneo
         private int nPlayers = 0;
         public int uidx = 0;
         public List<player> players = new List<player>();
-
-
+        public enum eArch
+        {
+            mips32,
+            arm32,
+            gb,
+            x86,
+            x64
+        }
+        private eArch _arch = eArch.x86;
+        public string arch
+        {
+            get
+            {
+                if (_arch == eArch.arm32)
+                    return "arm 32 bits";
+                else if (_arch == eArch.arm32)
+                    return "arm 32 bits";
+                else if (_arch == eArch.gb)
+                    return "gb 16 bits";
+                else if (_arch == eArch.x64)
+                    return "x86 64 bits";
+                else 
+                    return "x86 32 bits";
+            }
+        }
         public string r2path
         {
             get
@@ -227,7 +250,7 @@ namespace r2warsTorneo
             return rand;
         }
         string initstate = "";
-        public string Init(string[] files, string[] usernames, string arch)
+        public string Init(string[] files, string[] usernames, eArch arch)
         {
             players.Clear();
             Console.WriteLine("r2path =  " + r2path);
@@ -244,26 +267,37 @@ namespace r2warsTorneo
                 this.r2.RunCommand("pd");
                 //
                 string rasm2param = "";
-                if (arch == "mips")
+                if (arch == eArch.mips32)
                 {
+                    _arch = eArch.mips32;
                     this.r2.RunCommand("e asm.arch=mips");
                     this.r2.RunCommand("e asm.bits=32");
                     rasm2param = "-a mips -b 32";
                 }
-                else if (arch == "arm")
+                else if (arch == eArch.arm32)
                 {
+                    _arch = eArch.arm32;
                     this.r2.RunCommand("e asm.arch=arm");
                     this.r2.RunCommand("e asm.bits=32");
                     rasm2param = "-a arm -b 32";
                 }
-                else if (arch == "gb")
+                else if (arch == eArch.gb)
                 {
+                    _arch = eArch.gb;
                     this.r2.RunCommand("e asm.arch=gb");
                     this.r2.RunCommand("e asm.bits=16");
                     rasm2param = "-a gb -b 16";
                 }
+                else if (arch ==  eArch.x64)
+                {
+                    _arch = eArch.x64;
+                    this.r2.RunCommand("e asm.arch=x86");
+                    this.r2.RunCommand("e asm.bits=64");
+                    rasm2param = "-a x86 -b 64";
+                }
                 else
                 {
+                    _arch = eArch.x86;
                     this.r2.RunCommand("e asm.arch=x86");
                     this.r2.RunCommand("e asm.bits=32");
                     rasm2param = "-a x86 -b 32";

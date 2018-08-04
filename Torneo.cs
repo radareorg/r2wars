@@ -27,6 +27,7 @@ namespace r2warsTorneo
         public string actualCombatLog = "";
 
         public bool bTournamentRun = false;
+        private clsEngine.eArch tournamenArch = clsEngine.eArch.x86;
         public Torneo()
         {
             r2w = r2warsStatic.r2w;
@@ -123,7 +124,7 @@ namespace r2warsTorneo
                 fullCombatLog += tmp + Environment.NewLine;
                 bCombatEnd = false;
 
-                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], startcombat, false);
+                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], startcombat, false, tournamenArch);
             }
             else
             {
@@ -159,23 +160,67 @@ namespace r2warsTorneo
             fullCombatLog = "";
 
             string[] files = Directory.GetFiles(@".");// fbd.SelectedPath);
-            string extension = ".asm"; //".x86-32"
-            //string[] a = files.Where(p => p.EndsWith(".x86-32")).ToArray();
+            string[] selectedfiles = null;
+            string extension = "";
+            string [] arm32 = files.Where(p => p.EndsWith(".arm-32.asm")).ToArray();
+            string [] x8632 = files.Where(p => p.EndsWith(".x86-32.asm")).ToArray();
+            string strarch = "";
+            if (arm32.Count() > 0 && x8632.Count() > 0)
+            {
+                Console.Beep();
+                Console.Write("Detected mixed archs.\nWhat do you want to run:\n  1) arm 32 bit\n  2) x86 32 bit\n\n  0) exit\n\nSelect option:");
+                string res = Console.ReadLine();
+                if (res == "1")
+                {
+                    selectedfiles = arm32;
+                    extension = ".arm-32.asm";
+                    tournamenArch = clsEngine.eArch.arm32;
+                    strarch = "arm 32 bits.";
+                }
+                else if (res == "2")
+                {
+                    selectedfiles = x8632;
+                    extension = ".x86-32.asm";
+                    tournamenArch = clsEngine.eArch.x86;
+                    strarch = "x86 32 bits.";
+                }
+                else
+                    return;
+            }
+            else if (arm32.Count()>0)
+            {
+                selectedfiles = arm32;
+                extension = ".arm-32.asm";
+                tournamenArch = clsEngine.eArch.arm32;
+                strarch = "arm 32 bits.";
+            }
+            else if(x8632.Count()>0)
+            {
+                selectedfiles = x8632;
+                extension = ".x86-32.asm";
+                tournamenArch = clsEngine.eArch.x86;
+                strarch = "x86 32 bits.";
+            }
+            else
+            {
+                Console.WriteLine("Warriors dont found. plz copy inside this folder '.x86-32' or '.arm-32' warriors.");
+                return;
+            }
+            //string extension = ".asm"; //".x86-32"
+            //string[] a = files.Where(p => p.EndsWith(extension)).ToArray();
 
-            string[] a = files.Where(p => p.EndsWith(extension)).ToArray();
-
-            //listBox1.Items.AddRange(a);
-            Console.WriteLine("cargados " + a.Count().ToString() + " archivos");
+            Console.WriteLine("Selected tournament arch: " + strarch);
+            Console.WriteLine("Total Warriors loaded " + selectedfiles.Count().ToString());
             generator = new RoundRobinPairingsGenerator();
             generator.Reset();
             int n = 0;
-            foreach (string s in a)
+            foreach (string s in selectedfiles)
             {
                 var team = new TournamentTeam(n, 0);
                 teams.Add(team);
-                string tmp = Path.GetFileName(a[n]);
+                string tmp = Path.GetFileName(selectedfiles[n]);
                 teamNames.Add(n, tmp.Substring(0, tmp.IndexOf(extension)));
-                teamWarriors.Add(n, a[n]);
+                teamWarriors.Add(n, selectedfiles[n]);
                 n++;
             }
             // generamos todas las rondas.
