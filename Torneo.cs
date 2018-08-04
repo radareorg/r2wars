@@ -13,7 +13,7 @@ namespace r2warsTorneo
         static List<TournamentRound> rounds = new List<TournamentRound>();
         static Dictionary<long, string> teamNames = new Dictionary<long, string>();
         static Dictionary<long, string> teamWarriors = new Dictionary<long, string>();
-        r2wars r2w = null;
+        static r2wars r2w = null;
         RoundRobinPairingsGenerator generator;
         List<TournamentPairing> allcombats = new List<TournamentPairing>();
 
