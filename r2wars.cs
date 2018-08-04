@@ -324,9 +324,9 @@ namespace r2warsTorneo
             {
                 // Realizamos el STEP
                 bDead = Engine.stepInfoNew(getmemoria());
+                update(1);
                 if (bWait)
                 {
-                    update(1);
                     Task t = Task.Factory.StartNew(() =>
                     {
                         int n = 2;
