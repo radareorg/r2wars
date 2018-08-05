@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
   $('reset').addEventListener('click', () => {
       socket.send("reset_tournament");
       document.getElementById("start").innerHTML = "start";
+      clicked = false;
     });
   $('start').addEventListener('click', () => {
     if (clicked === false) {

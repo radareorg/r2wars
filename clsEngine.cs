@@ -253,6 +253,7 @@ namespace r2warsTorneo
         public string Init(string[] files, string[] usernames, eArch arch)
         {
             players.Clear();
+            initstate = "";
             Console.WriteLine("r2path =  " + r2path);
             if (File.Exists(r2path) || !OperatingSystem.IsWindows())
             {

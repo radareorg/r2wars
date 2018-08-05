@@ -25,7 +25,7 @@ namespace r2warsTorneo
         private Thread workerThread = null;
         private delegate void UpdateStatusDelegate(int n);
 
-        bool bThreadIni = false;
+        public bool bThreadIni = false;
         public bool bStopProcess = false;
         public event MyHandler1 Event_draw;
         public event MyHandler1 Event_roundEnd;
@@ -48,6 +48,7 @@ namespace r2warsTorneo
         string[] mm = { "", "" };
         string status = "Idle";
         public  bool sync_var = false;
+        Task gameLoopTask = null;
         public r2wars()
         {
             if (Engine == null)
@@ -63,6 +64,7 @@ namespace r2warsTorneo
             if (Event_draw != null)
             {
                 Event_draw(0, e1);
+                
                 /*Task t = Task.Factory.StartNew(() =>
                 {
                     while (!sync_var)
@@ -318,6 +320,19 @@ namespace r2warsTorneo
             }
              
         }
+
+        private void espera(int veces, int pausa = 1)
+        {
+            Task t = Task.Factory.StartNew(() =>
+            {
+                int n = veces;
+                while ((n--) > 0)
+                {
+                    System.Threading.Thread.Sleep(pausa);
+                }
+            });
+            t.Wait();
+        }
         private void ExecuteRoundInstruction(bool bWait)
         {
             if (Engine.cyleszero())
@@ -326,17 +341,7 @@ namespace r2warsTorneo
                 bDead = Engine.stepInfoNew(getmemoria());
                 update(1);
                 if (bWait)
-                {
-                    Task t = Task.Factory.StartNew(() =>
-                    {
-                        int n = 2;
-                        while ((n--) > 0)
-                        {
-                            System.Threading.Thread.Sleep(1);
-                        }
-                    });
-                    t.Wait();
-                }
+                    espera(2, 1);
             }
             else
             {
@@ -384,6 +389,7 @@ namespace r2warsTorneo
         }
         public void stepCombate()
         {
+            Debug.WriteLine("r2wars:stepCombate");
             if (bInCombat)
             {
                 if (!bDead)
@@ -444,7 +450,7 @@ namespace r2warsTorneo
             return false;
         }
        
-        public void iniciaCombate()
+        /*public void iniciaCombate()
         {
             if (!bThreadIni)
             {
@@ -453,6 +459,50 @@ namespace r2warsTorneo
                 workerThread = new Thread(new ThreadStart(this.gameloop));
                 workerThread.Start();
             }
+
+        }*/
+        public void iniciaCombate()
+        {
+            gameLoopTask = Task.Factory.StartNew(() =>
+            {
+                bThreadIni = true;
+                totalciclos = 0;
+                // Jugamos el combate mientras no hayan muertos
+                Debug.WriteLine("gameLoopTask: Ini.");
+                while (bInCombat)
+                {
+                    while (!bDead)
+                    {
+                        if (bStopProcess)
+                        {
+                            bThreadIni = false;
+                            bStopProcess = false;
+                            Debug.WriteLine("gameLoopTask: Fin (stopprocess).");
+                            return;
+                        }
+                        totalciclos++;
+                        if (totalciclos > 8000)
+                        {
+                            RoundExhausted();
+                        }
+                        ExecuteRoundInstruction(true);
+                    }
+                    bool bAllRoundEnd = RoundEnd();
+                    if (bAllRoundEnd || bSingleRound)
+                    {
+                        break;
+                    }
+                    else
+                        bDead = false;
+                }
+                bInCombat = false;
+                bThreadIni = false;
+                bStopProcess = false;
+                CombatEnd();
+                Debug.WriteLine("gameLoopTask: Fin");
+
+            });
+           
 
         }
         public bool playcombat(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, bool bIniciaCombate, bool bSingleRound, clsEngine.eArch arch)
@@ -477,8 +527,11 @@ namespace r2warsTorneo
 
         public void StopCombate()
         {
-            if (this.bThreadIni)
+            while (bThreadIni)
+            {
                 this.bStopProcess = true;
+                Thread.Sleep(100);
+            }
         }
 
         int indexlog = 0;
