@@ -50,6 +50,14 @@ namespace r2warsTorneo
                 msg = "none";
                 
             }
+            else if (recv == "arch_arm")
+            {
+                r2warsStatic.r2w.answer = "arm";
+            }
+            else if (recv == "arch_x86")
+            {
+                r2warsStatic.r2w.answer = "x86";
+            }
             if (msg!="")
                 Send(msg);
         }

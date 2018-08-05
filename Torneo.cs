@@ -151,6 +151,55 @@ namespace r2warsTorneo
                 Thread.Sleep(100);
             }
         }
+
+        private void dopairs(string[] selectedfiles, string strarch, string extension)
+        {
+            string salida = "";
+            salida = "Selected tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString();
+            
+            Console.WriteLine(salida);
+            generator = new RoundRobinPairingsGenerator();
+            generator.Reset();
+            int n = 0;
+            foreach (string s in selectedfiles)
+            {
+                var team = new TournamentTeam(n, 0);
+                teams.Add(team);
+                string tmp = Path.GetFileName(selectedfiles[n]);
+                teamNames.Add(n, tmp.Substring(0, tmp.IndexOf(extension)));
+                teamWarriors.Add(n, selectedfiles[n]);
+                n++;
+            }
+            // generamos todas las rondas.
+            while (true)
+            {
+                TournamentRound round = null;
+                generator.Reset();
+                generator.LoadState(teams, rounds);
+                round = generator.CreateNextRound(null);
+                if (round != null)
+                {
+                    rounds.Add(round);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            foreach (TournamentRound round in rounds)
+            {
+                foreach (var pairing in round.Pairings)
+                {
+                    allcombats.Add(pairing);
+                }
+            }
+            string memoria = "";
+            for (int x = 0; x < 1024; x++)
+                memoria += "\"\"" + ","; 
+            memoria=memoria.Remove(memoria.Length - 1);
+            string envio = "{\"player1\":{\"regs\":\"\",\"code\":\"\",\"name\":\"Player - 1\"},\"player2\":{\"regs\":\"\",\"code\":\"\",\"name\":\"Player - 2\"},\"memory\":[" + memoria + "],\"console\":\"" + salida + "\",\"status\":\"Warriors Loaded.\",\"scores\":\"\"}";
+            r2w.send_draw_event(envio.Replace("\n", "\\n").Replace("\r", "")); 
+        }
         public void LoadTournamentPlayers()
         {
             StopTournament();
@@ -188,27 +237,36 @@ namespace r2warsTorneo
                 string[] arm32 = files.Where(p => p.EndsWith(".arm-32.asm")).ToArray();
                 string[] x8632 = files.Where(p => p.EndsWith(".x86-32.asm")).ToArray();
                 string strarch = "";
+                int n = 0;
                 if (arm32.Count() > 0 && x8632.Count() > 0)
                 {
                     Console.Beep();
                     Console.Write("Detected mixed archs.\nWhat do you want to run:\n  1) arm 32 bit\n  2) x86 32 bit\n\n  0) exit\n\nSelect option:");
-                    string res = Console.ReadLine();
-                    if (res == "1")
+                    r2w.answer = "";
+                    r2w.send_draw_event("askarch");
+                    Task t = Task.Factory.StartNew(() =>
                     {
-                        selectedfiles = arm32;
-                        extension = ".arm-32.asm";
-                        tournamenArch = clsEngine.eArch.arm32;
-                        strarch = "arm 32 bits.";
-                    }
-                    else if (res == "2")
-                    {
-                        selectedfiles = x8632;
-                        extension = ".x86-32.asm";
-                        tournamenArch = clsEngine.eArch.x86;
-                        strarch = "x86 32 bits.";
-                    }
-                    else
-                        return;
+                        while (r2w.answer == "")
+                            Thread.Sleep(10);
+                        if (r2w.answer == "arm")
+                        {
+                            selectedfiles = arm32;
+                            extension = ".arm-32.asm";
+                            tournamenArch = clsEngine.eArch.arm32;
+                            strarch = "arm 32 bits.";
+                        }
+                        else if (r2w.answer == "x86")
+                        {
+                            selectedfiles = x8632;
+                            extension = ".x86-32.asm";
+                            tournamenArch = clsEngine.eArch.x86;
+                            strarch = "x86 32 bits.";
+                        }
+                        else
+                            return;
+                        dopairs(selectedfiles, strarch, extension);
+                    });
+                    return;
                 }
                 else if (arm32.Count() > 0)
                 {
@@ -231,44 +289,7 @@ namespace r2warsTorneo
                 }
                 //string extension = ".asm"; //".x86-32"
                 //string[] a = files.Where(p => p.EndsWith(extension)).ToArray();
-
-                Console.WriteLine("Selected tournament arch: " + strarch);
-                Console.WriteLine("Total Warriors loaded " + selectedfiles.Count().ToString());
-                generator = new RoundRobinPairingsGenerator();
-                generator.Reset();
-                int n = 0;
-                foreach (string s in selectedfiles)
-                {
-                    var team = new TournamentTeam(n, 0);
-                    teams.Add(team);
-                    string tmp = Path.GetFileName(selectedfiles[n]);
-                    teamNames.Add(n, tmp.Substring(0, tmp.IndexOf(extension)));
-                    teamWarriors.Add(n, selectedfiles[n]);
-                    n++;
-                }
-                // generamos todas las rondas.
-                while (true)
-                {
-                    TournamentRound round = null;
-                    generator.Reset();
-                    generator.LoadState(teams, rounds);
-                    round = generator.CreateNextRound(null);
-                    if (round != null)
-                    {
-                        rounds.Add(round);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                foreach (TournamentRound round in rounds)
-                {
-                    foreach (var pairing in round.Pairings)
-                    {
-                        allcombats.Add(pairing);
-                    }
-                }
+                dopairs(selectedfiles, strarch, extension);
             }
             
         }

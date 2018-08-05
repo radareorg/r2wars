@@ -48,6 +48,7 @@ namespace r2warsTorneo
         string[] mm = { "", "" };
         string status = "Idle";
         public  bool sync_var = false;
+        public string answer = "";
         Task gameLoopTask = null;
         public r2wars()
         {
@@ -103,7 +104,7 @@ namespace r2warsTorneo
             for (int x = 0; x < 1024; x++)
                 memoria[x] = "\"\"";
         }
-        string getmemoria()
+        public string getmemoria()
         {
             string salida = "";
             for (int x = 0; x < 1024; x++)

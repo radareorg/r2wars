@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   $('buffer').addEventListener('click', () => {
       on();
+      showArchDlg();
   });
   $('lt').addEventListener('click', () => {
       socket.send("prevlog");
@@ -34,6 +35,14 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   $('gt').addEventListener('click', () => {
       socket.send("nextlog");
+  });
+  $('x86').addEventListener('click', () => {
+      hideArchDlg();
+      socket.send("arch_x86")
+  });
+  $('arm').addEventListener('click', () => {
+      hideArchDlg();
+      socket.send("arch_arm")
   });
   updateUI();
 });
@@ -60,6 +69,9 @@ socket.onmessage = function (evt) {
         }
         else if (evt.data == "off") {
             off();
+        }
+        else if (evt.data == "askarch") {
+            showArchDlg();
         }
         else {
             state = JSON.parse(evt.data);
@@ -201,6 +213,14 @@ function on() {
 function off() {
     document.getElementById("overlay").style.display = "none";
 }
+function showArchDlg() {
+    document.getElementById("askarchdlg").style.display = "block";
+}
+
+function hideArchDlg() {
+    document.getElementById("askarchdlg").style.display = "none";
+}
+    display: none;
 </script>
 
 <style>
@@ -330,13 +350,105 @@ tr {
     -ms-transform: translate(-50%,0%);
     white-space: pre;
 }
+
+
+
+.win98{
+  display: none;
+  top: 30%;
+  left: 30%;
+  right: 30%;
+  z-index: 3;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: none;
+  font-size: 11px;
+  font-family: Tahoma, Verdana;
+  color: #070707;
+  position: absolute;
+  margin: 0 auto;
+  background: #bfbfbf;
+  border: 1px solid;
+  border-top-color: #dfdfdf;
+  border-left-color: #dfdfdf;
+  border-right-color: #808080;
+  border-bottom-color: #808080;
+  box-shadow: 1px 1px 0 0 #000;
+  width: 400px;
+  cursor: default;
+}
+.win98 .content {
+  padding: 7px 10px;
+  font-size: 16px;
+}
+.win98 .header {
+  margin: 2px 2px 0;
+  padding: 1px 2px;
+  color: #fff;
+  background: -webkit-linear-gradient(left, blue, red);
+  background: linear-gradient(to right, blue, red);
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 16px;
+}
+
+.win98 button {
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: none;
+  font-size: 11px;
+  font-family: Tahoma, Verdana;
+  color: #070707;
+  background: #bfbfbf;
+  border: 1px solid;
+  border-top-color: #dfdfdf;
+  border-left-color: #dfdfdf;
+  border-right-color: #808080;
+  border-bottom-color: #808080;
+  box-shadow: 1px 1px 0 0 #000;
+  text-align: center;
+  outline: none;
+  padding: 4px;
+  cursor: default;
+  font-size: 16px;
+}
+.win98 button:enabled {
+  color: #070707;
+}
+.win98 button:disabled {
+  color: #818181;
+  text-shadow: 1px 1px #fff;
+}
+.win98 button:active:enabled {
+  box-shadow: 1px 1px 0 0 #000 inset;
+  border-top-color: #808080;
+  border-left-color: #808080;
+  border-right-color: #dfdfdf;
+  border-bottom-color: #dfdfdf;
+} 
 </style>
 <body>
 <div id="overlay" class="overlay" onclick="off()">
     <div class="text">Score Board</div>
     <div id="scores" class="text1"></div>
-
 </div>
+
+<div id="askarchdlg" class='win98'>
+    <div class='header'>
+        Multiple warriors detected:
+    </div>
+    <div class='content'>
+        <center>
+            <h3>What Arch do you want to run?</h3>
+            <table style="width:100%">
+                <tr>
+                    <td><button id="arm">ARM 32 bits</button></td>
+                    <td><button id="x86">X86 32 bits</button></td>
+                </tr>
+            </table>
+        </center>
+    </div>
+</div>
+   
+
 <table style="width:100%;height:100%">
 <tr>
 
@@ -366,7 +478,7 @@ tr {
 <td>
 <table style="width:100%">
 <tr>
-  <td><button id="reset">Reset</button></td>
+  <td><button id="reset">Load Warriors</button></td>
   <td><button id="start">Start</button></td>
   <td><button id="next">Next</button></td>
   <td><button id="buffer">Scores</button></td>
