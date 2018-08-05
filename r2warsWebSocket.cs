@@ -27,28 +27,24 @@ namespace r2warsTorneo
             else if (recv == "next")
             {
                 r2warsStatic.torneo.StepTournamentCombats();
-                msg = r2warsStatic.r2w.json_output();
+                //msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "reset_tournament")
             {
                 r2warsStatic.torneo.LoadTournamentPlayers();
-                msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "start_tournament")
             {
                 r2warsStatic.torneo.RunTournamentCombats(true);
-                msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "stop_tournament")
             {
                 r2warsStatic.torneo.StopActualCombat();
-                msg = r2warsStatic.r2w.json_output();
             }
             else if(recv=="moreflow")
             {
                 r2warsStatic.r2w.sync_var = true;
                 msg = "none";
-                
             }
             else if (recv == "arch_arm")
             {

@@ -95,8 +95,6 @@ namespace r2warsTorneo
             else
                 memoria = getmemoria();
             string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\",\"name\":\""+username1+"\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\",\"name\":\""+username2+"\"},\"memory\":[" + memoria + "],\"console\":\""+torneo+"\",\"status\":\"" + status + "\",\"scores\":\"" + clasi + "\"}";
-            //salida = "{\"player1\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"\\n\\n\\n" + clasi + "\",\"name\":\"" + username1 + "\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"\",\"name\":\"" + username2 + "\"},\"memory\":[" + getmemoria() + "],\"console\":\"\",\"status\":\"" + status + "\"}";
-
             return salida;
         }
         public void initmemoria()
@@ -467,7 +465,6 @@ namespace r2warsTorneo
             gameLoopTask = Task.Factory.StartNew(() =>
             {
                 bThreadIni = true;
-                totalciclos = 0;
                 // Jugamos el combate mientras no hayan muertos
                 Debug.WriteLine("gameLoopTask: Ini.");
                 while (bInCombat)

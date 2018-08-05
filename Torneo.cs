@@ -154,10 +154,6 @@ namespace r2warsTorneo
 
         private void dopairs(string[] selectedfiles, string strarch, string extension)
         {
-            string salida = "";
-            salida = "Selected tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString();
-            
-            Console.WriteLine(salida);
             generator = new RoundRobinPairingsGenerator();
             generator.Reset();
             int n = 0;
@@ -193,12 +189,17 @@ namespace r2warsTorneo
                     allcombats.Add(pairing);
                 }
             }
+
             string memoria = "";
             for (int x = 0; x < 1024; x++)
-                memoria += "\"\"" + ","; 
-            memoria=memoria.Remove(memoria.Length - 1);
+                memoria += "\"\"" + ",";
+            memoria = memoria.Remove(memoria.Length - 1);
+
+            string salida = "";
+            salida = "Tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString() +"\nPress 'start' button to begin tournament." ;
             string envio = "{\"player1\":{\"regs\":\"\",\"code\":\"\",\"name\":\"Player - 1\"},\"player2\":{\"regs\":\"\",\"code\":\"\",\"name\":\"Player - 2\"},\"memory\":[" + memoria + "],\"console\":\"" + salida + "\",\"status\":\"Warriors Loaded.\",\"scores\":\"\"}";
-            r2w.send_draw_event(envio.Replace("\n", "\\n").Replace("\r", "")); 
+            r2w.send_draw_event(envio.Replace("\n", "\\n").Replace("\r", ""));
+            r2w.totalciclos = 0;
         }
         public void LoadTournamentPlayers()
         {
@@ -240,7 +241,6 @@ namespace r2warsTorneo
                 int n = 0;
                 if (arm32.Count() > 0 && x8632.Count() > 0)
                 {
-                    Console.Beep();
                     Console.Write("Detected mixed archs.\nWhat do you want to run:\n  1) arm 32 bit\n  2) x86 32 bit\n\n  0) exit\n\nSelect option:");
                     r2w.answer = "";
                     r2w.send_draw_event("askarch");
@@ -287,11 +287,8 @@ namespace r2warsTorneo
                     Console.WriteLine("Warriors dont found. plz copy inside this folder '.x86-32' or '.arm-32' warriors.");
                     return;
                 }
-                //string extension = ".asm"; //".x86-32"
-                //string[] a = files.Where(p => p.EndsWith(extension)).ToArray();
                 dopairs(selectedfiles, strarch, extension);
-            }
-            
+            }  
         }
         public void StopActualCombat()
         {
