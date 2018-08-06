@@ -27,7 +27,6 @@ namespace r2warsTorneo
             else if (recv == "next")
             {
                 r2warsStatic.torneo.StepTournamentCombats();
-                //msg = r2warsStatic.r2w.json_output();
             }
             else if (recv == "reset_tournament")
             {

@@ -105,17 +105,29 @@ state = {
 }
 
 function updateUI() {
-  var memory = memoryWidget();
-  $('memory').innerHTML = memory;
-  $('status').innerHTML = state.status;
-  $('console').innerHTML = state.console;
-  $('regs1').innerHTML = state.player1.regs;
-  $('code1').innerHTML = state.player1.code;
-  $('regs2').innerHTML = state.player2.regs;
-  $('code2').innerHTML = state.player2.code;
-  $('player1').innerHTML = state.player1.name;
-  $('player2').innerHTML = state.player2.name;
-  $('scores').innerHTML = state.scores;
+  if (state.hasOwnProperty("memory"))
+  {
+      var memory = memoryWidget();
+      $('memory').innerHTML = memory;
+  }
+  if (state && state.status)
+    $('status').innerHTML = state.status;
+  if (state && state.console)
+    $('console').innerHTML = state.console;
+  if (state && state.player1 && state.player1.regs)
+    $('regs1').innerHTML = state.player1.regs;
+  if (state && state.player1 && state.player1.code)
+    $('code1').innerHTML = state.player1.code;
+  if (state && state.player2 && state.player2.regs)
+    $('regs2').innerHTML = state.player2.regs;
+  if (state && state.player2 && state.player2.code)
+    $('code2').innerHTML = state.player2.code;
+  if (state && state.player1 && state.player1.name)
+    $('player1').innerHTML = state.player1.name;
+  if (state && state.player2 && state.player2.name)
+    $('player2').innerHTML = state.player2.name;
+  if (state && state.scores)
+    $('scores').innerHTML = state.scores;
 
 }
 

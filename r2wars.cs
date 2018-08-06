@@ -22,9 +22,6 @@ namespace r2warsTorneo
     public class r2wars
     {
         public clsEngine Engine = null;
-        private Thread workerThread = null;
-        private delegate void UpdateStatusDelegate(int n);
-
         public bool bThreadIni = false;
         public bool bStopProcess = false;
         public event MyHandler1 Event_draw;
@@ -38,10 +35,12 @@ namespace r2warsTorneo
 
         public bool bInCombat = false;
         bool bSingleRound = false;
-        public int[] victorias = { 0, 0 };
-        public int totalciclos = 0;
-        public int nRound = 0;
-        public bool bDead = false;
+
+        int totalciclos = 0;
+        int[] victorias = { 0, 0 };
+        int nRound = 0;
+        bool bDead = false;
+
         string[] memoria = new string[1024];
         string[] rr = { "", "" };
         string[] dd = { "", "" };
@@ -79,12 +78,6 @@ namespace r2warsTorneo
         }
         public string json_output(int nPlayerLog = -1)
         {
-            string torneo;
-            if (r2warsStatic.torneo.bTournamentRun)
-                torneo =  "Total Ciclos:" + totalciclos+"\\n"+ r2warsStatic.torneo.actualCombatLog.Replace("\n", "\\n").Replace("\r","");
-            else
-                torneo = "Total Ciclos:" + totalciclos + "\\n" + r2warsStatic.torneo.fullCombatLog.Replace("\n", "\\n").Replace("\r", "");
-            string clasi = r2warsStatic.torneo.stats.Replace("\n", "\\n").Replace("\r", "");
             string username1 = Engine.GetUserName(0);
             string username2 = Engine.GetUserName(1);
             string memoria = "";
@@ -94,7 +87,7 @@ namespace r2warsTorneo
             }
             else
                 memoria = getmemoria();
-            string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\",\"name\":\""+username1+"\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\",\"name\":\""+username2+"\"},\"memory\":[" + memoria + "],\"console\":\""+torneo+"\",\"status\":\"" + status + "\",\"scores\":\"" + clasi + "\"}";
+            string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\",\"name\":\"" + username1 + "\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\",\"name\":\"" + username2 + "\"},\"memory\":[" + memoria + "], \"status\":\"" + status + "\"}";//,\"scores\":\"" + clasi + "\"}";
             return salida;
         }
         public void initmemoria()
@@ -109,6 +102,14 @@ namespace r2warsTorneo
                 salida += memoria[x] + ",";
             return salida.Remove(salida.Length - 1);
 
+        }
+        public string getemptymemory()
+        {
+            string res = "";
+            for (int x = 0; x < 1024; x++)
+                res += "\"\"" + ",";
+            res = res.Remove(res.Length - 1);
+            return res;
         }
         void pinta(int offset, string c, string s)
         {
@@ -315,6 +316,7 @@ namespace r2warsTorneo
                 e1.ganador = Engine.otherplayer;
                 e1.round = nRound;
                 e1.ciclos = totalciclos;
+                e1.winnername = Engine.players[Engine.otherplayer].name;
                 this.Event_combatEnd(this, e1);
             }
              
@@ -347,43 +349,6 @@ namespace r2warsTorneo
                 Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].cycles + 1, getmemoria()));
             }
             Engine.switchUserIdx();
-
-        }
-
-        void gameloop()
-        {
-            totalciclos = 0;
-            // Jugamos el combate mientras no hayan muertos
-            while (bInCombat)
-            {
-                while (!bDead)
-                {
-                    if (this.bStopProcess)
-                    {
-                        bThreadIni = false;
-                        bStopProcess = false;
-                        this.workerThread.Abort();
-                        return;
-                    }
-                    totalciclos++;
-                    if (totalciclos>  8000)
-                    {
-                        RoundExhausted();
-                    }
-                    ExecuteRoundInstruction(true);
-                }
-                bool bAllRoundEnd = RoundEnd();
-                if (bAllRoundEnd || bSingleRound)
-                {
-                    break;
-                }
-                else
-                    bDead = false;
-            }
-            bInCombat = false;
-            bThreadIni = false;
-            bStopProcess = false;
-            CombatEnd();
 
         }
         public void stepCombate()
@@ -449,17 +414,6 @@ namespace r2warsTorneo
             return false;
         }
        
-        /*public void iniciaCombate()
-        {
-            if (!bThreadIni)
-            {
-                bThreadIni = true;
-                // Initialise and start worker thread
-                workerThread = new Thread(new ThreadStart(this.gameloop));
-                workerThread.Start();
-            }
-
-        }*/
         public void iniciaCombate()
         {
             gameLoopTask = Task.Factory.StartNew(() =>
@@ -516,6 +470,7 @@ namespace r2warsTorneo
                 this.victorias[1] = 0;
                 this.nRound = 0;
                 this.bDead = false;
+                this.totalciclos = 0;
                 if (bIniciaCombate)
                     iniciaCombate();
                 return true;
@@ -532,7 +487,6 @@ namespace r2warsTorneo
             }
         }
 
-        int indexlog = 0;
         public void prevLog()
         {
             clsinfo tmp = Engine.players[1].logGetPrev();
