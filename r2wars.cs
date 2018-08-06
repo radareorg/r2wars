@@ -103,14 +103,7 @@ namespace r2warsTorneo
             return salida.Remove(salida.Length - 1);
 
         }
-        public string getemptymemory()
-        {
-            string res = "";
-            for (int x = 0; x < 1024; x++)
-                res += "\"\"" + ",";
-            res = res.Remove(res.Length - 1);
-            return res;
-        }
+       
         void pinta(int offset, string c, string s)
         {
             lock (memoria)
