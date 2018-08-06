@@ -241,6 +241,7 @@ namespace r2warsTorneo
                 e3.ganador = 0;
                 e3.round = nRound;
                 e3.ciclos = totalciclos;
+                e3.winnername = "";
                 Event_roundExhausted(this, e3);
             }
             update(0);
@@ -257,6 +258,7 @@ namespace r2warsTorneo
                 e2.ganador = Engine.otherplayer;
                 e2.round = nRound;
                 e2.ciclos = totalciclos;
+                e2.winnername = Engine.players[Engine.otherplayer].name;
                 Event_roundEnd(this, e2);
             }
             nRound++;
@@ -433,6 +435,8 @@ namespace r2warsTorneo
                 this.totalciclos = 0;
                 if (bIniciaCombate)
                     iniciaCombate();
+                else
+                    send_draw_event(json_output());
                 return true;
             }
             return false;

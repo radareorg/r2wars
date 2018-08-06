@@ -56,8 +56,8 @@ namespace r2warsTorneo
         private void RoundEnd(object sender, MyEvent e)
         {
             int nround = e.round + 1;
-            fullCombatLog   += "    Round-" + nround.ToString() + " " + r2w.Engine.players[e.ganador].name  + " Wins Cycles:" + e.ciclos.ToString() + "\\n";
-            actualCombatLog += "    Round-" + nround.ToString() + " " + r2w.Engine.players[e.ganador].name + " Wins Cycles:" + e.ciclos.ToString() + "\\n"; 
+            fullCombatLog   += "    Round-" + nround.ToString() + " " + e.winnername + " Wins Cycles:" + e.ciclos.ToString() + "\\n";
+            actualCombatLog += "    Round-" + nround.ToString() + " " + e.winnername + " Wins Cycles:" + e.ciclos.ToString() + "\\n"; 
             if (actualcombatscore[e.ganador].Score!=null)
                 actualcombatscore[e.ganador].Score+= new HighestPointsScore(1);
             string s = "{\"console\":\"" + actualCombatLog + "\"}";
@@ -67,7 +67,7 @@ namespace r2warsTorneo
         {
             int nround = e.round + 1;
             actualCombatLog += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() +"\\n";
-            fullCombatLog += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + "\\n";
+            fullCombatLog   += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + "\\n";
         }
         string getstats()
         {
@@ -281,7 +281,7 @@ namespace r2warsTorneo
             if (bTournamentRun == false)
             {
                 RunTournamentCombats(false);
-                r2w.bInCombat = true;
+               // r2w.bInCombat = true;
             }
             else if (r2w.bThreadIni == false)
             {
@@ -298,17 +298,15 @@ namespace r2warsTorneo
                 bTournamentRun = true;
                 tournamentTask = Task.Factory.StartNew(() =>
                 {
-                    bool firsttime = true;
+             
                     bTournamenTask = true;
                     System.Diagnostics.Debug.WriteLine("TournamenTask: Ini.");
                     while (bTournamentRun)
                     {
                         if (bCombatEnd == true)
                         {
-                            if (firsttime && !startcombat)
-                                runnextcombat(false);
-                            else
-                                runnextcombat(true);
+                            runnextcombat(startcombat);
+                            //startcombat = true;
                         }
                         else
                             Thread.Sleep(100);
