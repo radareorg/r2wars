@@ -232,7 +232,7 @@ namespace r2warsTorneo
                 r2w.bDead = false;
                 fullCombatLog = "";
 
-                string[] files = Directory.GetFiles(@".");// fbd.SelectedPath);
+                string[] files = Directory.GetFiles(@"./warriors");
                 string[] selectedfiles = null;
                 string extension = "";
                 string[] arm32 = files.Where(p => p.EndsWith(".arm-32.asm")).ToArray();
