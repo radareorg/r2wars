@@ -134,6 +134,7 @@ namespace r2warsTorneo
                 bTournamentRun = false;
                 string s = "{\"console\":\"" + fullCombatLog + "\"}";
                 SendDrawEvent(s);
+                SendDrawEvent("on");
             }
         }
         public void StopTournament()
@@ -202,15 +203,13 @@ namespace r2warsTorneo
             string memoria = getemptymemory();
             string salida = "";
             salida = "Tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString() +"\nPress 'start' button to begin tournament." ;
-            string envio = "{\"player1\":{\"regs\":\"\",\"code\":\"\",\"name\":\"Player - 1\"},\"player2\":{\"regs\":\"\",\"code\":\"\",\"name\":\"Player - 2\"},\"memory\":[" + memoria + "],\"console\":\"" + salida + "\",\"status\":\"Warriors Loaded.\",\"scores\":\"\"}";
+            string envio = "{\"player1\":{\"regs\":\" \",\"code\":\" \",\"name\":\"Player - 1\"},\"player2\":{\"regs\":\" \",\"code\":\" \",\"name\":\"Player - 2\"},\"memory\":[" + memoria + "],\"console\":\"" + salida + "\",\"status\":\"Warriors Loaded.\",\"scores\":\" \"}";
             SendDrawEvent(envio.Replace("\n", "\\n").Replace("\r", ""));
 
         }
         public void LoadTournamentPlayers()
         {
             StopTournament();
-      
-
             if (bTournamentRun == false)
             {
                 if (r2w != null)
@@ -283,7 +282,7 @@ namespace r2warsTorneo
                 }
                 else
                 {
-                    Console.WriteLine("Warriors dont found. plz copy inside this folder '.x86-32' or '.arm-32' warriors.");
+                    Console.WriteLine("Warriors dont found. plz copy inside 'warriors' folder '.x86-32' or '.arm-32' warriors.");
                     return;
                 }
                 dopairs(selectedfiles, strarch, extension);

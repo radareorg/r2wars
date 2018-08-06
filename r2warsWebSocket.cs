@@ -9,20 +9,18 @@ namespace r2warsTorneo
         {
             string recv = e.Data;
             string msg = "";
-            if (recv == "refresh")
+            /*if (recv == "refresh")
             {
                 msg = r2warsStatic.r2w.json_output();
             }
-            else if (recv == "prevlog")
+            else*/
+            if (recv == "prevlog")
             {
                 r2warsStatic.r2w.prevLog();
-                
-                msg = r2warsStatic.r2w.json_output(0);
             }
             else if (recv == "nextlog")
             {
                 r2warsStatic.r2w.nextLog();
-                msg = r2warsStatic.r2w.json_output(0);
             }
             else if (recv == "next")
             {

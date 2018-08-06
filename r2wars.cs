@@ -76,7 +76,7 @@ namespace r2warsTorneo
             }
             e1 = null;
         }
-        public string json_output(int nPlayerLog = -1)
+        string json_output(int nPlayerLog = -1)
         {
             string username1 = Engine.GetUserName(0);
             string username2 = Engine.GetUserName(1);
@@ -488,7 +488,7 @@ namespace r2warsTorneo
             tmp = Engine.players[0].logGetPrev();
             if (tmp!=null)
                 drawslogcreen(0, tmp);
-
+            send_draw_event(json_output(0));
         }
         public void nextLog()
         {
@@ -498,6 +498,7 @@ namespace r2warsTorneo
             tmp = Engine.players[0].logGetNext();
             if (tmp != null)
                 drawslogcreen(0, tmp);
+            send_draw_event(json_output(0));
         }
         private void textBox1_KeyPress() // cmds de log
         {
