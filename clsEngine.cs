@@ -64,7 +64,6 @@ namespace r2warsTorneo
         public int cycles = 0;
         public int cyclesfixed = 0;
         public clsinfo actual;
-
         public List<clsinfo> log;
         int idxlog;
         public player(string name, int orig, int size, string code, string user, int ciclos) //,string dasm,string mem,string ins, string pc, string reg)
@@ -81,8 +80,6 @@ namespace r2warsTorneo
             this.actual = new clsinfo("", "", "", "", "", 0,"");
             idxlog = -1;
         }
-
-
         public void logClear()
         {
             log.Clear();
@@ -127,9 +124,9 @@ namespace r2warsTorneo
             return log[idxlog];
         }
     }
-   
     public class clsEngine
     {
+        private string initstate = "";
         private string _r2path = "";
         private string _rasm2path = "";
         public int memsize = 1024;
@@ -232,7 +229,6 @@ namespace r2warsTorneo
             p.WaitForExit();
             return output;
         }
-
         List<int> get_random_offsets(int nRandoms)
         {
             System.Random rnd = new System.Random();
@@ -256,7 +252,6 @@ namespace r2warsTorneo
             }
             return rand;
         }
-        string initstate = "";
         public string Init(string[] files, string[] usernames, eArch arch)
         {
             players.Clear();
@@ -336,7 +331,6 @@ namespace r2warsTorneo
                 this.r2.RunCommand("e asm.flags=false");
                 this.r2.RunCommand("e asm.comments=false");
                 this.r2.RunCommand("aei");
-                
                 if (initstate == "")
                 {
                     this.r2.RunCommand("aeim");
@@ -349,7 +343,6 @@ namespace r2warsTorneo
                 }
 
                 this.r2.RunCommand(string.Format("w0 {0} @ 0", memsize));
-
                 nPlayers = files.Count();
                 offsets = get_random_offsets(this.nPlayers);
                 for (int x = 0; x < this.nPlayers; x++)
@@ -370,7 +363,6 @@ namespace r2warsTorneo
                     this.r2.RunCommand(cmd);
                     cmd = string.Format("aer SP=SP+{0}", addr);
                     this.r2.RunCommand(cmd);
-
                     string initRegs = this.r2.RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
                     // generamos el jugador
                     strname = usernames[x];
@@ -379,7 +371,6 @@ namespace r2warsTorneo
                     player p = new player(strname, addr, src.Length / 2, src, initRegs, ciclos);
                     // lo añadimos a la lista de jugadores
                     players.Add(p);
-
                     players[x].actual.ins = GetPCInstruction(x);
                     players[x].actual.dasm = GetFullProgram(x);
                     players[x].actual.regs = GetRegs(x);
@@ -387,8 +378,6 @@ namespace r2warsTorneo
                     players[x].actual.mem = GetMemAccessRAW(x);
                     // borramos el log
                     p.log.Clear();
-                 
-
                 }
                 if (players.Count < 2)
                 {
@@ -404,7 +393,6 @@ namespace r2warsTorneo
             }
             return "NOK";
         }
-
         public bool ReiniciaGame(bool bNew)
         {
             List<int> offsets = get_random_offsets(this.nPlayers);
@@ -445,7 +433,6 @@ namespace r2warsTorneo
                 // borramos el log
                 players[x].log.Clear();
             }
-
             this.r2.RunCommand("f theend=0");
             return true;
         }
@@ -480,7 +467,6 @@ namespace r2warsTorneo
                 return this.uidx;
             }
         }
-        
         public int otherplayer 
         {
             get
@@ -504,7 +490,6 @@ namespace r2warsTorneo
                 uidx = nuser;
             }
         }
-
         public bool cyleszero()
         {
         
@@ -523,7 +508,6 @@ namespace r2warsTorneo
             players[this.uidx].cycles = GetPCInstructionCycles();
             return GetPC(this.uidx);
         }
-
         public void stepIn(int nuser)
         {
             switchUser(nuser);
@@ -571,8 +555,6 @@ namespace r2warsTorneo
             }
             return result;
         }
-
-
         public string GetRegs(string format = "")
         {
             return this.r2.RunCommand("aer" + format).Replace("\r", "");
@@ -593,7 +575,6 @@ namespace r2warsTorneo
             switchUser(nuser);
             return GetPCProgram();
         }
-
         public string GetFullProgram()
         {
             string query = string.Format("pD {0} @ {1}", players[this.uidx].size, players[this.uidx].orig);
@@ -605,7 +586,6 @@ namespace r2warsTorneo
             switchUser(nuser);
             return GetFullProgram();
         }
-
         public string GetMemAccessRAW()
         {
             return this.r2.RunCommand("s PC;aea*").Replace("\r", "");
@@ -660,7 +640,6 @@ namespace r2warsTorneo
             switchUser(nuser);
             return GetMemAccessRead(memaccess);
         }
-
         public Dictionary<int, int> GetMemAccessWriteDict(string memaccess)
         {
             string[] ls = memaccess.Split('\n');
@@ -683,7 +662,6 @@ namespace r2warsTorneo
 
                     }
                 }
-
             }
             return dicMemWrite;
         }
@@ -707,7 +685,6 @@ namespace r2warsTorneo
             switchUser(nuser);
             return GetMemAccessWrite(memaccess);
         }
-
         public string GetUserName()
         {
             return players[uidx].name;
@@ -719,7 +696,6 @@ namespace r2warsTorneo
             else
                 return "";
         }
-
         public int GetAddressProgram()
         {
             return players[uidx].orig;
@@ -745,9 +721,6 @@ namespace r2warsTorneo
         {
             return players[nuser].cycles;
         }
-
-    
-
         public bool stepInfoNew(string txtmemoria)
         {
             // Obtenemos los indices del jugador actual y el otro
@@ -755,14 +728,12 @@ namespace r2warsTorneo
             int otherplayer = uidx + 1;
             if (otherplayer >= players.Count)
                 otherplayer = 0;
-
             string res = this.r2.RunCommand(players[thisplayer].user + ";s PC;aea*;aes;aerR;s PC;aoj 1;aer PC;?v 1+theend").Replace("\r", "");
             string[] lines = res.Split('\n');
             string[] regs = lines.Where(i => i.StartsWith("aer")).ToArray();
             string[] memaccess = lines.Where(i => i.StartsWith("f")).ToArray();
             string[] json = lines.Where(i => i.StartsWith("[")).ToArray();
             string[] PC = lines.Where(i => i.StartsWith("0x")).ToArray();
-
             string userregs = string.Join(";", regs);
             string regs1 = string.Join("\n", regs).Replace("aer ", "");
             string mem = string.Join("\n", memaccess);
@@ -775,7 +746,6 @@ namespace r2warsTorneo
                 int.TryParse(tmp, out ciclos);
                 if (ciclos < 0) ciclos = 0;
             }
-            
             // Generamos la peticion de desensamblado del PC actual del jugador actual
             int pc = Convert.ToInt32(PC[0].Substring(3), 16);
             string query = "";
@@ -783,13 +753,10 @@ namespace r2warsTorneo
                 query = string.Format("s PC; pd 8");
             else
                 query = string.Format("pD {0} @ {1}", players[thisplayer].size, players[thisplayer].orig);
-
-            
             int otherpc = players[otherplayer].actual.ipc();
             Dictionary<int, int> dicMemWrite = GetMemAccessWriteDict(mem);
             bool bThisPCAltered = false;
             bool bOtherPCAltered = false;
-
             if (dicMemWrite.Count > 0)
             {
                 foreach (var i in dicMemWrite)
@@ -811,29 +778,23 @@ namespace r2warsTorneo
                     }
                 }
             }
-
             // Generamos la peticion de desensamblado del PC del otro jugador
             string otherquery = "";
             if (otherpc < players[otherplayer].orig || otherpc >= players[otherplayer].orig + players[otherplayer].size)
                 otherquery = string.Format("s {0}; pd 8", players[otherplayer].actual.pc);
             else
                 otherquery = string.Format("pD {0} @ {1}", players[otherplayer].size, players[otherplayer].orig);
-
             // Procesamos el output de radare y obtenemos los 2 desensamblados
             string bothdasm = this.r2.RunCommand(query + ";?e split;" + otherquery).Replace("\r", "");
             string[] tmpdasm = bothdasm.Split(new string[] { "split" }, StringSplitOptions.None);
             string dasm = tmpdasm[0];
             string otherdasm = tmpdasm[1];
-
             int x1 = dasm.IndexOf(PC[0]);
             string newins = dasm.Substring(x1, dasm.IndexOf('\n', x1) - x1);
-
-
             if (PC[1] != "" && PC[1] != "0x1")
                 players[thisplayer].actual.dead = true;
             else
                 players[thisplayer].actual.dead = false;
-
             // si han cambiado los desensamblados del otro jugador, actualizamos y añadimos una linea de log con el nuevo.
             if (bOtherPCAltered)
             {
@@ -845,31 +806,21 @@ namespace r2warsTorneo
             {
                 players[thisplayer].actual.dasm = dasm;
             }
-
             // Añadimos al log la instruccion que se ejecuto
             players[thisplayer].logAdd(new clsinfo(players[thisplayer].actual.pc, players[thisplayer].actual.ins, players[thisplayer].actual.dasm, players[thisplayer].actual.regs, players[thisplayer].actual.mem, players[thisplayer].cycles+1, txtmemoria));
-
-
             // Actualizamos los ciclos y registros 
             players[this.uidx].user = userregs;
-           
             if (players[this.uidx].cycles == -1)
                 players[this.uidx].cyclesfixed = ciclos;
-
             players[this.uidx].cycles = ciclos;
-
-          
             // Actualizamos la instruccion actual
             players[thisplayer].actual.pc = PC[0];
             players[thisplayer].actual.ins = newins;
             players[thisplayer].actual.mem = mem;
             players[thisplayer].actual.dasm = dasm;
             players[thisplayer].actual.regs = regs1;
-
-        
             return players[thisplayer].actual.dead;
         }
-
         public string formatregs(string regs)
         {
             string[] reg = regs.Split('\n');
@@ -888,7 +839,4 @@ namespace r2warsTorneo
             return regformat;
         }
     }
-
-
-
 }

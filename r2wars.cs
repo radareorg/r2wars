@@ -4,7 +4,6 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Threading.Tasks;
-
 public static class OperatingSystem
 {
     public static bool IsWindows() =>
@@ -16,7 +15,6 @@ public static class OperatingSystem
     public static bool IsLinux() =>
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 }
-
 namespace r2warsTorneo
 {
     public class r2wars
@@ -24,30 +22,26 @@ namespace r2warsTorneo
         public clsEngine Engine = null;
         public bool bThreadIni = false;
         public bool bStopProcess = false;
+        public bool bInCombat = false;
+        public bool sync_var = false;
         public event MyHandler1 Event_draw;
         public event MyHandler1 Event_roundEnd;
         public event MyHandler1 Event_combatEnd;
         public event MyHandler1 Event_roundExhausted;
-
+        public string answer = "";
         string[] pColor = { "b", "r" };
         string[] cRead =  { "q", "y" };
         string[] cWrite = { "v", "o" };
-
-        public bool bInCombat = false;
-        bool bSingleRound = false;
-
-        int totalciclos = 0;
-        int[] victorias = { 0, 0 };
-        int nRound = 0;
-        bool bDead = false;
-
-        string[] memoria = new string[1024];
         string[] rr = { "", "" };
         string[] dd = { "", "" };
         string[] mm = { "", "" };
+        string[] memoria = new string[1024];
         string status = "Idle";
-        public  bool sync_var = false;
-        public string answer = "";
+        int[] victorias = { 0, 0 };
+        int totalciclos = 0;
+        int nRound = 0;
+        bool bDead = false;
+        bool bSingleRound = false;
         Task gameLoopTask = null;
         public r2wars()
         {
@@ -55,8 +49,6 @@ namespace r2warsTorneo
                 Engine = new clsEngine();
             initmemoria();
         }
-
- 
         public void send_draw_event(string s)
         {
             MyEvent e1 = new MyEvent();
@@ -64,7 +56,6 @@ namespace r2warsTorneo
             if (Event_draw != null)
             {
                 Event_draw(0, e1);
-                
                 /*Task t = Task.Factory.StartNew(() =>
                 {
                     while (!sync_var)
@@ -103,7 +94,6 @@ namespace r2warsTorneo
             return salida.Remove(salida.Length - 1);
 
         }
-       
         void pinta(int offset, string c, string s)
         {
             lock (memoria)
@@ -128,7 +118,6 @@ namespace r2warsTorneo
         }
         void drawplayerturn(int nplayer)
         {
-         
         }
         void drawslogcreen(int nplayer, clsinfo actual)
         {
@@ -144,8 +133,6 @@ namespace r2warsTorneo
             {
                 mm[nplayer] = actual.txtmemoria;
             }
-
-
         }
         void drawscreen(int nplayer)
         {
@@ -185,7 +172,6 @@ namespace r2warsTorneo
         {
             Dictionary<int, int> dicMemRead = Engine.GetMemAccessReadDict(Engine.players[nplayer].actual.mem);
             Dictionary<int, int> dicMemWrite = Engine.GetMemAccessWriteDict(Engine.players[nplayer].actual.mem);
-
             if (dicMemRead.Count > 0)
             {
                 foreach (var i in dicMemRead)
@@ -197,7 +183,6 @@ namespace r2warsTorneo
                     }
                 }
             }
-
             if (dicMemWrite.Count > 0)
             {
                 foreach (var i in dicMemWrite)
@@ -212,7 +197,6 @@ namespace r2warsTorneo
                 }
             }
         }
-    
         private void update(int n)
         {
             if (n == 1)
@@ -229,7 +213,6 @@ namespace r2warsTorneo
                     drawmemaccess(Engine.thisplayer);
                     // Dibujamos la info del jugador
                     drawscreen(Engine.thisplayer);
-
                     // dibujamos la info del nuevo jugador
                     drawscreen(Engine.otherplayer);
                     // ponemos el marco del jugador actual
@@ -277,8 +260,6 @@ namespace r2warsTorneo
                 Event_roundEnd(this, e2);
             }
             nRound++;
-
-            // MessageBox.Show("Gana jugador: " + Engine.players[Engine.otherplayer].name);
             victorias[Engine.otherplayer]++;
             if (nRound == 3 || victorias[1] == 2 || victorias[0] == 2)
             {
@@ -296,8 +277,6 @@ namespace r2warsTorneo
                 }
                 return false;
             }
-            
-
         }
         private void CombatEnd()
         {
@@ -312,9 +291,7 @@ namespace r2warsTorneo
                 e1.winnername = Engine.players[Engine.otherplayer].name;
                 this.Event_combatEnd(this, e1);
             }
-             
         }
-
         private void espera(int veces, int pausa = 1)
         {
             Task t = Task.Factory.StartNew(() =>
@@ -342,7 +319,6 @@ namespace r2warsTorneo
                 Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].cycles + 1, getmemoria()));
             }
             Engine.switchUserIdx();
-
         }
         public void stepCombate()
         {
@@ -369,14 +345,10 @@ namespace r2warsTorneo
                     }
                 }
             }
-
         }
-  
         public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, clsEngine.eArch arch)
         {
             initmemoria();
-            //string arch = "x86";
-            //string arch = "arm";
             string res = Engine.Init(new string[] {
                                                rutaWarrior1,
                                                rutaWarrior2
@@ -406,7 +378,6 @@ namespace r2warsTorneo
             }
             return false;
         }
-       
         public void iniciaCombate()
         {
             gameLoopTask = Task.Factory.StartNew(() =>
@@ -445,17 +416,13 @@ namespace r2warsTorneo
                 bStopProcess = false;
                 CombatEnd();
                 Debug.WriteLine("gameLoopTask: Fin");
-
             });
-           
-
         }
         public bool playcombat(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, bool bIniciaCombate, bool bSingleRound, clsEngine.eArch arch)
         {
             if (iniciaJugadores(rutaWarrior1, rutaWarrior2, nameWarrior1, nameWarrior2, arch))
             {
                 // ejecutamos el combate
-
                 this.bInCombat = true;     // indicamos que estamos en un combate
                 this.bSingleRound = bSingleRound; // indicamos que No queremos un unico round
                 this.bStopProcess = false;
@@ -470,7 +437,6 @@ namespace r2warsTorneo
             }
             return false;
         }
-
         public void StopCombate()
         {
             while (bThreadIni)
@@ -479,7 +445,6 @@ namespace r2warsTorneo
                 Thread.Sleep(100);
             }
         }
-
         public void prevLog()
         {
             clsinfo tmp = Engine.players[1].logGetPrev();
@@ -500,72 +465,5 @@ namespace r2warsTorneo
                 drawslogcreen(0, tmp);
             send_draw_event(json_output(0));
         }
-        private void textBox1_KeyPress() // cmds de log
-        {
-            /*    if (e.KeyChar == 13)
-                {
-                    if (textBox1.Text == "clear")
-                    {
-                        richLog.Text = "";
-                    }
-                    else if (textBox1.Text == "log0")
-                    {
-                        richLog.Text += ">log0\n" + Engine.players[0].logGetFull();
-                    }
-                    else if (textBox1.Text == "log1")
-                    {
-                        richLog.Text += ">log1\n" + Engine.players[1].logGetFull();
-                    }
-                    else if (textBox1.Text == "prev0")
-                    {
-                        clsinfo tmp = Engine.players[0].logGetPrev();
-                        drawslogcreen(0, tmp);
-
-                    }
-                    else if (textBox1.Text == "next0")
-                    {
-                        clsinfo tmp = Engine.players[0].logGetNext();
-                        drawslogcreen(0, tmp);
-                    }
-
-                    else if (textBox1.Text == "prev1")
-                    {
-                        clsinfo tmp = Engine.players[1].logGetPrev();
-                        drawslogcreen(1, tmp);
-                    }
-                    else if (textBox1.Text == "next1")
-                    {
-                        clsinfo tmp = Engine.players[1].logGetNext();
-                        drawslogcreen(1, tmp);
-                    }
-                    else if (textBox1.Text == "next")
-                    {
-                        clsinfo tmp = Engine.players[1].logGetNext();
-                        drawslogcreen(1, tmp);
-                        tmp = Engine.players[0].logGetNext();
-                        drawslogcreen(0, tmp);
-                    }
-                    else if (textBox1.Text == "prev")
-                    {
-                        clsinfo tmp = Engine.players[1].logGetPrev();
-                        drawslogcreen(1, tmp);
-                        tmp = Engine.players[0].logGetPrev();
-                        drawslogcreen(1, tmp);
-                    }
-
-                    else
-                    {
-                        string res = Engine.runcommand(textBox1.Text);
-                        richLog.Text += string.Format("\n#{0}\n{1}", textBox1.Text, res);
-
-
-                    }
-                    // scroll it automatically
-                    richLog.SelectionStart = richLog.Text.Length;
-                    richLog.ScrollToCaret();
-                    textBox1.Text = "";
-                }*/
-        }
-
     }
 }

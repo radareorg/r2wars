@@ -4,16 +4,11 @@ namespace r2warsTorneo
 {
     public class r2warsWebSocket : WebSocketBehavior
     {
-        
+        static MyHandler1 h1;
         protected override void OnMessage(MessageEventArgs e)
         {
             string recv = e.Data;
             string msg = "";
-            /*if (recv == "refresh")
-            {
-                msg = r2warsStatic.r2w.json_output();
-            }
-            else*/
             if (recv == "prevlog")
             {
                 r2warsStatic.r2w.prevLog();
@@ -54,7 +49,6 @@ namespace r2warsTorneo
             if (msg!="")
                 Send(msg);
         }
-
         private void R2wars_EventPinta(object sender, MyEvent e)
         {
             r2warsStatic.r2w.sync_var = false;
@@ -64,10 +58,8 @@ namespace r2warsTorneo
         {
             base.OnClose(e);
         }
-        static MyHandler1 h1; 
         protected override void OnOpen()
         {
-            
             r2warsStatic.r2w.Event_draw -= h1;
             h1 = new MyHandler1(R2wars_EventPinta);
             r2warsStatic.r2w.Event_draw += h1;

@@ -9,30 +9,26 @@ namespace r2warsTorneo
 {
     public class Torneo
     {
-        string warriorsDirectory = "warriors";
         static List<TournamentTeam> teams = new List<TournamentTeam>();
         static List<TournamentRound> rounds = new List<TournamentRound>();
         static Dictionary<long, string> teamNames = new Dictionary<long, string>();
         static Dictionary<long, string> teamWarriors = new Dictionary<long, string>();
         static r2wars r2w = null;
+
         RoundRobinPairingsGenerator generator;
         List<TournamentPairing> allcombats = new List<TournamentPairing>();
-
         TournamentTeamScore[] actualcombatscore = { null, null };
+        clsEngine.eArch tournamenArch = clsEngine.eArch.x86;
+        Task tournamentTask = null;
         int ncombat = 0;
         string[] actualcombatnames = { "", "" };
         string[] actualcombatwarriors = { "", "" };
-
-        public string fullCombatLog ="";
-        //public string stats ="";
-        public string actualCombatLog = "";
-
-        public bool bTournamentRun = false;
-        private clsEngine.eArch tournamenArch = clsEngine.eArch.x86;
-
-        Task tournamentTask = null;
+        string fullCombatLog ="";
+        string actualCombatLog = "";
+        string warriorsDirectory = "warriors";
         bool bTournamenTask = false;
         bool bCombatEnd = true;
+        bool bTournamentRun = false;
 
         public Torneo()
         {
@@ -41,7 +37,6 @@ namespace r2warsTorneo
         public void SetWarriorsDirectory(string wd) {
             this.warriorsDirectory = wd;
         }
-
         private void espera(int veces, int pausa = 1)
         {
             Task t = Task.Factory.StartNew(() =>
@@ -58,33 +53,26 @@ namespace r2warsTorneo
         {
             r2w.send_draw_event(str);
         }
-
         private void RoundEnd(object sender, MyEvent e)
         {
-           
             int nround = e.round + 1;
             fullCombatLog   += "    Round-" + nround.ToString() + " " + r2w.Engine.players[e.ganador].name  + " Wins Cycles:" + e.ciclos.ToString() + "\\n";
             actualCombatLog += "    Round-" + nround.ToString() + " " + r2w.Engine.players[e.ganador].name + " Wins Cycles:" + e.ciclos.ToString() + "\\n"; 
-
             if (actualcombatscore[e.ganador].Score!=null)
                 actualcombatscore[e.ganador].Score+= new HighestPointsScore(1);
             string s = "{\"console\":\"" + actualCombatLog + "\"}";
             SendDrawEvent(s);
         }
-
         private void RoundExhausted(object sender, MyEvent e)
         {
             int nround = e.round + 1;
             actualCombatLog += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() +"\\n";
             fullCombatLog += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + "\\n";
-            
         }
-
         string getstats()
         {
             string stats = string.Format("Combat {0} / {1}", ncombat, allcombats.Count) + "\\n";
             var standings = generator.GenerateRankings();
-
             foreach (var standing in standings)
             {
                 string salida = string.Format("{0} {1} {2}", standing.Rank.ToString(), teamNames[standing.Team.TeamId], standing.ScoreDescription);
@@ -99,10 +87,8 @@ namespace r2warsTorneo
             actualCombatLog += "Combat Winner: " + ganador + "\\n";
             fullCombatLog += "Combat Winner: " + ganador + "\\n";
             ncombat++;
-
             SendDrawEvent(getstats());
             SendDrawEvent("on");
-
             espera(1000);
             SendDrawEvent("off");
             bCombatEnd = true;
@@ -164,7 +150,6 @@ namespace r2warsTorneo
             teams.Clear();
             ncombat = 0;
             fullCombatLog = "";
-
             generator = new RoundRobinPairingsGenerator();
             generator.Reset();
             int n = 0;
@@ -199,7 +184,6 @@ namespace r2warsTorneo
                     allcombats.Add(pairing);
                 }
             }
-
             string memoria = getemptymemory();
             string salida = "";
             salida = "Tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString() +"\nPress 'start' button to begin tournament." ;
@@ -332,8 +316,6 @@ namespace r2warsTorneo
                     bTournamenTask = false;
                     System.Diagnostics.Debug.WriteLine("TournamenTask: Fin.");
                 });
-
-               
             }
             else
                 r2w.iniciaCombate();
