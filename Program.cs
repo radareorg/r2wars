@@ -14,16 +14,21 @@ namespace r2warsTorneo
     {
         static void Main(string[] args)
         {
+            string httpUrl = "http://localhost:9664";
+            string websocketUrl = "ws://localhost:9966";
             var tokenSource = new CancellationTokenSource();
             CancellationToken ct = tokenSource.Token;
+            if (args.Length > 0) {
+              r2warsStatic.torneo.SetWarriorsDirectory(args[0]);
+            }
 
             var taskA = new Task(() =>
             {
-                var nancyHost = new Nancy.Hosting.Self.NancyHost(new Uri("http://localhost:9664"), new CustomBootstrapper());
+                var nancyHost = new Nancy.Hosting.Self.NancyHost(new Uri(httpUrl), new CustomBootstrapper());
                 nancyHost.Start();
                 Console.WriteLine("Web server running...");
 
-                Process.Start("http://localhost:9664");
+                Process.Start(httpUrl);
 
 
                 while (!ct.IsCancellationRequested) { Thread.Sleep(1000); }
@@ -32,7 +37,7 @@ namespace r2warsTorneo
 
             var taskB = new Task(() =>
             {
-                var wssv = new WebSocketServer("ws://localhost:9966");
+                var wssv = new WebSocketServer(websocketUrl);
                 wssv.AddWebSocketService<r2warsWebSocket>("/r2wars");
                 wssv.Start();
                 while (!ct.IsCancellationRequested) { Thread.Sleep(1000); }

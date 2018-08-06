@@ -9,6 +9,7 @@ namespace r2warsTorneo
 {
     public class Torneo
     {
+        string warriorsDirectory = "warriors";
         static List<TournamentTeam> teams = new List<TournamentTeam>();
         static List<TournamentRound> rounds = new List<TournamentRound>();
         static Dictionary<long, string> teamNames = new Dictionary<long, string>();
@@ -36,6 +37,9 @@ namespace r2warsTorneo
         public Torneo()
         {
             r2w = r2warsStatic.r2w;
+        }
+        public void SetWarriorsDirectory(string wd) {
+            this.warriorsDirectory = wd;
         }
 
         private void espera(int veces, int pausa = 1)
@@ -232,11 +236,14 @@ namespace r2warsTorneo
                 r2w.bDead = false;
                 fullCombatLog = "";
 
-                string[] files = Directory.GetFiles(@"./warriors");
+
+
+                string[] files = Directory.GetFiles(warriorsDirectory);
                 string[] selectedfiles = null;
                 string extension = "";
                 string[] arm32 = files.Where(p => p.EndsWith(".arm-32.asm")).ToArray();
                 string[] x8632 = files.Where(p => p.EndsWith(".x86-32.asm")).ToArray();
+                string[] mips64 = files.Where(p => p.EndsWith(".mips-64.asm")).ToArray();
                 string strarch = "";
                 int n = 0;
                 if (arm32.Count() > 0 && x8632.Count() > 0)
@@ -267,6 +274,13 @@ namespace r2warsTorneo
                         dopairs(selectedfiles, strarch, extension);
                     });
                     return;
+                }
+                else if (mips64.Count() > 0)
+                {
+                    selectedfiles = arm32;
+                    extension = ".mips-64.asm";
+                    tournamenArch = clsEngine.eArch.mips64;
+                    strarch = "mips 64 bits.";
                 }
                 else if (arm32.Count() > 0)
                 {

@@ -141,7 +141,10 @@ namespace r2warsTorneo
         public enum eArch
         {
             mips32,
+            mips64,
+            arm16,
             arm32,
+            arm64,
             gb,
             x86,
             x64
@@ -151,16 +154,21 @@ namespace r2warsTorneo
         {
             get
             {
+                if (_arch == eArch.arm16)
+                    return "arm 16 bits";
                 if (_arch == eArch.arm32)
                     return "arm 32 bits";
-                else if (_arch == eArch.arm32)
-                    return "arm 32 bits";
-                else if (_arch == eArch.gb)
+                if (_arch == eArch.arm64)
+                    return "arm 64 bits";
+                if (_arch == eArch.mips32)
+                    return "mips 32 bits";
+                if (_arch == eArch.mips64)
+                    return "mips 64bits";
+                if (_arch == eArch.gb)
                     return "gb 16 bits";
-                else if (_arch == eArch.x64)
+                if (_arch == eArch.x64)
                     return "x86 64 bits";
-                else 
-                    return "x86 32 bits";
+                return "x86 32 bits";
             }
         }
         public string r2path
@@ -177,8 +185,7 @@ namespace r2warsTorneo
                         ruta = "radare2.exe";
                     return ruta;
                 }
-                else
-                    return this._r2path;
+                return this._r2path;
               
             }
             set
@@ -275,12 +282,33 @@ namespace r2warsTorneo
                     this.r2.RunCommand("e asm.bits=32");
                     rasm2param = "-a mips -b 32";
                 }
+                else if (arch == eArch.mips64)
+                {
+                    _arch = eArch.mips32;
+                    this.r2.RunCommand("e asm.arch=mips");
+                    this.r2.RunCommand("e asm.bits=64");
+                    rasm2param = "-a mips -b 64";
+                }
+                else if (arch == eArch.arm64)
+                {
+                    _arch = eArch.mips32;
+                    this.r2.RunCommand("e asm.arch=arm");
+                    this.r2.RunCommand("e asm.bits=64");
+                    rasm2param = "-a mips -b 64";
+                }
                 else if (arch == eArch.arm32)
                 {
                     _arch = eArch.arm32;
                     this.r2.RunCommand("e asm.arch=arm");
                     this.r2.RunCommand("e asm.bits=32");
                     rasm2param = "-a arm -b 32";
+                }
+                else if (arch == eArch.arm16)
+                {
+                    _arch = eArch.arm16;
+                    this.r2.RunCommand("e asm.arch=arm");
+                    this.r2.RunCommand("e asm.bits=16");
+                    rasm2param = "-a arm -b 16";
                 }
                 else if (arch == eArch.gb)
                 {

@@ -4,7 +4,7 @@ R2W=r2wars-$(VERSION)
 all:
 	xbuild
 
-dist: r2w32
+dist:
 	xbuild /p:Configuration=Release
 	rm -rf $(R2W)
 	mkdir -p $(R2W) 
