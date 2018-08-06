@@ -1,4 +1,4 @@
-VERSION=2018.1
+VERSION=$(shell git tag|tail -n1)
 R2W=r2wars-$(VERSION)
 
 all:
