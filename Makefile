@@ -2,14 +2,15 @@ VERSION=$(shell git tag|tail -n1)
 R2W=r2wars-$(VERSION)
 
 all:
-	xbuild
+	msbuild r2wars.sln
 
 dist:
-	xbuild /p:Configuration=Release
+	msbuild r2wars.sln /p:Configuration=Release
 	rm -rf $(R2W)
-	mkdir -p $(R2W) 
+	mkdir -p $(R2W)
 	cp -rf examples bin/Release/*.exe bin/Release/*.dll $(R2W)
 	cp -f RELEASE_README.md $(R2W)/README.txt
+	mv $(R2W)/examples $(R2W)/warriors
 	zip -r $(R2W).zip $(R2W)
 	rm -rf $(R2W)
 
