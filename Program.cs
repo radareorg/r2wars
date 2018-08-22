@@ -14,8 +14,8 @@ namespace r2warsTorneo
     {
         static void Main(string[] args)
         {
-            string httpUrl = "http://localhost:9664";
-            string websocketUrl = "ws://localhost:9966";
+            string httpUrl = "http://127.0.0.1:9664";
+            string websocketUrl = "ws://127.0.0.1:9966";
             var tokenSource = new CancellationTokenSource();
             CancellationToken ct = tokenSource.Token;
             if (args.Length > 0) {
