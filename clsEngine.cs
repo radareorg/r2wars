@@ -614,7 +614,7 @@ namespace r2warsTorneo
                     }
                     catch (Exception ex)
                     {
-                       
+                        Console.WriteLine(ex.ToString());
                     }
                 }
             }
@@ -659,7 +659,7 @@ namespace r2warsTorneo
                     }
                     catch (Exception ex)
                     {
-
+                        Console.WriteLine(ex.ToString());
                     }
                 }
             }
