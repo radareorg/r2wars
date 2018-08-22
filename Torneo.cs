@@ -186,7 +186,15 @@ namespace r2warsTorneo
             }
             string memoria = getemptymemory();
             string salida = "";
-            salida = "Tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString() +"\nPress 'start' button to begin tournament." ;
+            salida = "Tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString();
+            if (selectedfiles.Count() < 2)
+            {
+                salida += "\nCannot begin Tournament with only one Warrior!";
+            }
+            else
+            {
+                salida += "\nPress 'start' button to begin Tournament.";
+            }
             string envio = "{\"player1\":{\"regs\":\" \",\"code\":\" \",\"name\":\"Player - 1\"},\"player2\":{\"regs\":\" \",\"code\":\" \",\"name\":\"Player - 2\"},\"memory\":[" + memoria + "],\"console\":\"" + salida + "\",\"status\":\"Warriors Loaded.\",\"scores\":\" \"}";
             SendDrawEvent(envio.Replace("\n", "\\n").Replace("\r", ""));
 
