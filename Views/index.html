@@ -43,6 +43,9 @@ document.addEventListener('DOMContentLoaded', function () {
       hideArchDlg();
       socket.send("arch_arm")
   });
+  $('nowarriorsdlg').addEventListener('click', () => {
+      hideNoWarriorsDlg();
+  });
   updateUI();
 });
 
@@ -71,6 +74,9 @@ socket.onmessage = function (evt) {
         }
         else if (evt.data == "askarch") {
             showArchDlg();
+        }
+        else if (evt.data == "nowarriors") {
+            showNoWarriorsDlg();
         }
         else {
             state = JSON.parse(evt.data);
@@ -226,9 +232,14 @@ function off() {
 function showArchDlg() {
     document.getElementById("askarchdlg").style.display = "block";
 }
-
 function hideArchDlg() {
     document.getElementById("askarchdlg").style.display = "none";
+}
+function showNoWarriorsDlg() {
+    document.getElementById("nowarriorsdlg").style.display = "block";
+}
+function hideNoWarriorsDlg() {
+    document.getElementById("nowarriorsdlg").style.display = "none";
 }
     display: none;
 </script>
@@ -457,7 +468,17 @@ tr {
         </center>
     </div>
 </div>
-   
+
+<div id="nowarriorsdlg" class='win98'>
+    <div class='header'>
+        Warriors not found:
+    </div>
+    <div class='content'>
+        <center>
+            <h3>Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.</h3>
+        </center>
+    </div>
+</div>
 
 <table style="width:100%;height:100%">
 <tr>

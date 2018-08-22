@@ -207,7 +207,18 @@ namespace r2warsTorneo
                     r2w.Event_roundExhausted -= new MyHandler1(RoundExhausted);
                     r2w.Event_roundExhausted += new MyHandler1(RoundExhausted);
                 }
-                string[] files = Directory.GetFiles(warriorsDirectory);
+                string noWarriors = "Warriors not found. Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.";
+                string[] files = new string[] {};
+                try
+                {
+                    files = Directory.GetFiles(warriorsDirectory);
+                }
+                catch
+                {
+                    SendDrawEvent("nowarriors");
+                    Console.WriteLine(noWarriors);
+                    return;
+                }
                 string[] selectedfiles = null;
                 string extension = "";
                 string[] arm32 = files.Where(p => p.EndsWith(".arm-32.asm")).ToArray();
@@ -266,7 +277,7 @@ namespace r2warsTorneo
                 }
                 else
                 {
-                    Console.WriteLine("Warriors not found. Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.");
+                    Console.WriteLine(noWarriors);
                     return;
                 }
                 dopairs(selectedfiles, strarch, extension);
