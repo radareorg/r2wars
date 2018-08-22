@@ -1,11 +1,17 @@
 VERSION=$(shell git tag|tail -n1)
 R2W=r2wars-$(VERSION)
 
+ifeq ($(OS),Windows_NT)
+    build := msbuild
+else
+    build := xbuild
+	endif
+
 all:
-	msbuild r2wars.sln
+	$(build) r2wars.sln
 
 dist:
-	msbuild r2wars.sln /p:Configuration=Release
+	$(build) r2wars.sln /p:Configuration=Release
 	rm -rf $(R2W)
 	mkdir -p $(R2W)
 	cp -rf examples bin/Release/*.exe bin/Release/*.dll $(R2W)
