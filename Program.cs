@@ -26,9 +26,9 @@ namespace r2warsTorneo
             {
                 var nancyHost = new Nancy.Hosting.Self.NancyHost(new Uri(httpUrl), new CustomBootstrapper());
                 nancyHost.Start();
-                Console.WriteLine("Web server running...");
+                Console.WriteLine("Web server running at " + httpUrl);
 
-                Process.Start(httpUrl);
+                /* Process.Start(httpUrl); */
 
 
                 while (!ct.IsCancellationRequested) { Thread.Sleep(1000); }
