@@ -106,7 +106,7 @@ namespace r2warsTorneo
                     actualcombatscore[j].Score += new HighestPointsScore(0);
                     j++;
                 }
-                string tmp = string.Format("Iniciando combate {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
+                string tmp = string.Format("Combat initialized {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
                 actualCombatLog = tmp + "\\n";
                 fullCombatLog += tmp + "\\n";
                 bCombatEnd = false;
@@ -266,7 +266,7 @@ namespace r2warsTorneo
                 }
                 else
                 {
-                    Console.WriteLine("Warriors dont found. plz copy inside 'warriors' folder '.x86-32' or '.arm-32' warriors.");
+                    Console.WriteLine("Warriors not found. Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.");
                     return;
                 }
                 dopairs(selectedfiles, strarch, extension);
