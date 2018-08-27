@@ -98,14 +98,16 @@ namespace r2warsTorneo
         {
             lock (memoria)
             {
-                memoria[offset] = "\"" + c + s + "\"";
+                if (offset>0 && offset<Engine.memsize)
+                    memoria[offset] = "\"" + c + s + "\"";
             }
         }
         void pinta(int offset, string c)
         {
             lock (memoria)
             {
-                memoria[offset] = "\"" + c + "\"";
+                if (offset > 0 && offset < Engine.memsize)
+                    memoria[offset] = "\"" + c + "\"";
             }
         }
         void pinta(int offset, int count, string c)
@@ -147,7 +149,7 @@ namespace r2warsTorneo
 
             lock (dd)
             {
-                dd[nplayer] = "Cycles:" + Engine.players[nplayer].cycles.ToString() + "\nActual Instruction: \n" + Engine.players[nplayer].actual.ins + "\n\n" + dasm; 
+                dd[nplayer] = "Cycles:" + Engine.players[nplayer].actual.cycles.ToString() + "\nActual Instruction: \n" + Engine.players[nplayer].actual.ins + "\n\n" + dasm;
             }
             lock (rr)
             {
@@ -255,14 +257,14 @@ namespace r2warsTorneo
             {
                 MyEvent e2 = new MyEvent();
                 e2.message = "";
-                e2.ganador = Engine.otherplayer;
+                e2.ganador = Engine.thisplayer;
                 e2.round = nRound;
                 e2.ciclos = totalciclos;
-                e2.winnername = Engine.players[Engine.otherplayer].name;
+                e2.winnername = Engine.players[Engine.thisplayer].name;
                 Event_roundEnd(this, e2);
             }
             nRound++;
-            victorias[Engine.otherplayer]++;
+            victorias[Engine.thisplayer]++;
             if (nRound == 3 || victorias[1] == 2 || victorias[0] == 2)
             {
                 return true;
@@ -318,7 +320,7 @@ namespace r2warsTorneo
             }
             else
             {
-                Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].cycles + 1, getmemoria()));
+                Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].actual.cycles + 1, getmemoria()));
             }
             Engine.switchUserIdx();
         }
@@ -345,10 +347,12 @@ namespace r2warsTorneo
                     {
                         CombatEnd();
                     }
+                    else
+                        bDead = false;
                 }
             }
         }
-        public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, clsEngine.eArch arch)
+        public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2)
         {
             initmemoria();
             string res = Engine.Init(new string[] {
@@ -358,8 +362,7 @@ namespace r2warsTorneo
                                  new string[] {
                                                nameWarrior1,
                                                nameWarrior2
-                                             },
-                                 arch
+                                             }
                                 );
             Console.WriteLine("RES = " + res);
             if (res == "OK")
@@ -420,9 +423,9 @@ namespace r2warsTorneo
                 Debug.WriteLine("gameLoopTask: Fin");
             });
         }
-        public bool playcombat(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, bool bIniciaCombate, bool bSingleRound, clsEngine.eArch arch)
+        public bool playcombat(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, bool bIniciaCombate, bool bSingleRound)
         {
-            if (iniciaJugadores(rutaWarrior1, rutaWarrior2, nameWarrior1, nameWarrior2, arch))
+            if (iniciaJugadores(rutaWarrior1, rutaWarrior2, nameWarrior1, nameWarrior2))
             {
                 // ejecutamos el combate
                 this.bInCombat = true;     // indicamos que estamos en un combate

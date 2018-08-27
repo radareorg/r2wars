@@ -18,7 +18,7 @@ namespace r2warsTorneo
         RoundRobinPairingsGenerator generator;
         List<TournamentPairing> allcombats = new List<TournamentPairing>();
         TournamentTeamScore[] actualcombatscore = { null, null };
-        clsEngine.eArch tournamenArch = clsEngine.eArch.x86;
+        //clsEngine.eArch tournamenArch = clsEngine.eArch.x86;
         Task tournamentTask = null;
         int ncombat = 0;
         string[] actualcombatnames = { "", "" };
@@ -106,13 +106,13 @@ namespace r2warsTorneo
                     actualcombatscore[j].Score += new HighestPointsScore(0);
                     j++;
                 }
-                string tmp = string.Format("Iniciando combate {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
+                string tmp = string.Format("Combat initialized {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
                 actualCombatLog = tmp + "\\n";
                 fullCombatLog += tmp + "\\n";
                 bCombatEnd = false;
                 string s = "{\"console\":\"" + actualCombatLog + "\"}";
                 SendDrawEvent(s);
-                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], startcombat, false, tournamenArch);
+                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], startcombat, false);
             }
             else
             {
@@ -186,7 +186,15 @@ namespace r2warsTorneo
             }
             string memoria = getemptymemory();
             string salida = "";
-            salida = "Tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString() +"\nPress 'start' button to begin tournament." ;
+            salida = "Tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString();
+            if (selectedfiles.Count() < 2)
+            {
+                salida += "\nCannot begin Tournament with only one Warrior!";
+            }
+            else
+            {
+                salida += "\nPress 'start' button to begin Tournament.";
+            }
             string envio = "{\"player1\":{\"regs\":\" \",\"code\":\" \",\"name\":\"Player - 1\"},\"player2\":{\"regs\":\" \",\"code\":\" \",\"name\":\"Player - 2\"},\"memory\":[" + memoria + "],\"console\":\"" + salida + "\",\"status\":\"Warriors Loaded.\",\"scores\":\" \"}";
             SendDrawEvent(envio.Replace("\n", "\\n").Replace("\r", ""));
 
@@ -207,68 +215,22 @@ namespace r2warsTorneo
                     r2w.Event_roundExhausted -= new MyHandler1(RoundExhausted);
                     r2w.Event_roundExhausted += new MyHandler1(RoundExhausted);
                 }
-                string[] files = Directory.GetFiles(warriorsDirectory);
-                string[] selectedfiles = null;
-                string extension = "";
-                string[] arm32 = files.Where(p => p.EndsWith(".arm-32.asm")).ToArray();
-                string[] x8632 = files.Where(p => p.EndsWith(".x86-32.asm")).ToArray();
-                string[] mips64 = files.Where(p => p.EndsWith(".mips-64.asm")).ToArray();
-                string strarch = "";
-                if (arm32.Count() > 0 && x8632.Count() > 0)
+                string noWarriors = "Warriors not found. Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.";
+                string[] files = new string[] { };
+                try
                 {
-                    Console.Write("Detected mixed archs.");
-                    r2w.answer = "";
-                    SendDrawEvent("askarch");
-                    Task t = Task.Factory.StartNew(() =>
-                    {
-                        while (r2w.answer == "")
-                            Thread.Sleep(10);
-                        if (r2w.answer == "arm")
-                        {
-                            selectedfiles = arm32;
-                            extension = ".arm-32.asm";
-                            tournamenArch = clsEngine.eArch.arm32;
-                            strarch = "arm 32 bits.";
-                        }
-                        else if (r2w.answer == "x86")
-                        {
-                            selectedfiles = x8632;
-                            extension = ".x86-32.asm";
-                            tournamenArch = clsEngine.eArch.x86;
-                            strarch = "x86 32 bits.";
-                        }
-                        else
-                            return;
-                        dopairs(selectedfiles, strarch, extension);
-                    });
+                    files = Directory.GetFiles(warriorsDirectory);
+                }
+                catch
+                {
+                    SendDrawEvent("nowarriors");
+                    Console.WriteLine(noWarriors);
                     return;
                 }
-                else if (mips64.Count() > 0)
-                {
-                    selectedfiles = arm32;
-                    extension = ".mips-64.asm";
-                    tournamenArch = clsEngine.eArch.mips64;
-                    strarch = "mips 64 bits.";
-                }
-                else if (arm32.Count() > 0)
-                {
-                    selectedfiles = arm32;
-                    extension = ".arm-32.asm";
-                    tournamenArch = clsEngine.eArch.arm32;
-                    strarch = "arm 32 bits.";
-                }
-                else if (x8632.Count() > 0)
-                {
-                    selectedfiles = x8632;
-                    extension = ".x86-32.asm";
-                    tournamenArch = clsEngine.eArch.x86;
-                    strarch = "x86 32 bits.";
-                }
-                else
-                {
-                    Console.WriteLine("Warriors dont found. plz copy inside 'warriors' folder '.x86-32' or '.arm-32' warriors.");
-                    return;
-                }
+
+                string[] selectedfiles = files.Where(p => p.EndsWith(".asm")).ToArray();
+                string extension = ".asm";
+                string strarch = "mixed";
                 dopairs(selectedfiles, strarch, extension);
             }  
         }
