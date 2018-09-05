@@ -41,11 +41,12 @@ namespace r2warsTorneo
         {
             Task t = Task.Factory.StartNew(() =>
             {
-                int n = veces;
+                /*int n = veces;
                 while ((n--) > 0)
                 {
                     System.Threading.Thread.Sleep(pausa);
-                }
+                }*/
+                System.Threading.Thread.Sleep(veces);
             });
             t.Wait();
         }
