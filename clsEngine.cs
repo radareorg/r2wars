@@ -358,6 +358,7 @@ namespace r2warsTorneo
                     this.r2[x].RunCommand("e asm.lines=false");
                     this.r2[x].RunCommand("e asm.flags=false");
                     this.r2[x].RunCommand("e asm.comments=false");
+                    this.r2[x].RunCommand("e cfg.r2wars=false");
                     this.r2[x].RunCommand("aei");
                     this.r2[x].RunCommand("aeim");
                     initstate[x] = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
