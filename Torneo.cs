@@ -69,6 +69,8 @@ namespace r2warsTorneo
             int nround = e.round + 1;
             actualCombatLog += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() +"\\n";
             fullCombatLog   += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + "\\n";
+            string s = "{\"console\":\"" + actualCombatLog + "\"}";
+            SendDrawEvent(s);
         }
         string getstats()
         {

@@ -282,7 +282,7 @@ namespace r2warsTorneo
                 return false;
             }
         }
-        private void CombatEnd()
+        private void CombatEnd(bool empate=false)
         {
             Debug.WriteLine("CombatEnd::Invoked.");
             if (Event_combatEnd != null)
@@ -292,10 +292,14 @@ namespace r2warsTorneo
                 e1.ganador = Engine.otherplayer;
                 e1.round = nRound;
                 e1.ciclos = totalciclos;
-                e1.winnername = Engine.players[Engine.otherplayer].name;
+                if (!empate)
+                    e1.winnername = Engine.players[Engine.otherplayer].name;
+                else
+                    e1.winnername = "Draw";
                 this.Event_combatEnd(this, e1);
             }
         }
+
         private void espera(int veces, int pausa = 1)
         {
             Task t = Task.Factory.StartNew(() =>
@@ -390,6 +394,7 @@ namespace r2warsTorneo
                 bThreadIni = true;
                 // Jugamos el combate mientras no hayan muertos
                 Debug.WriteLine("gameLoopTask: Ini.");
+                int nexausted = 0;
                 while (bInCombat)
                 {
                     while (!bDead)
@@ -404,7 +409,21 @@ namespace r2warsTorneo
                         totalciclos++;
                         if (totalciclos > 8000)
                         {
-                            RoundExhausted();
+                            nexausted++;
+                            if (nexausted > 2)
+                            {
+                                bInCombat = false;
+                                bThreadIni = false;
+                                bStopProcess = false;
+                                CombatEnd(true);
+                                nexausted = 0;
+                                Debug.WriteLine("gameLoopTask: Fin(draw)");
+                                return;
+                            }
+                            else
+                            {
+                                RoundExhausted();
+                            }
                         }
                         ExecuteRoundInstruction(true);
                     }
