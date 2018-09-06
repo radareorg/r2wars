@@ -814,7 +814,6 @@ namespace r2warsTorneo
                 players[thisplayer].actual.dead = true;
             else
                 players[thisplayer].actual.dead = false;
-
             // refrescamos el dasm del otro jugador por si fue cambiado por la ejecucion del jugador actual
             players[otherplayer].actual.dasm = otherdasm;
 

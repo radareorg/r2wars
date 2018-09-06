@@ -136,11 +136,32 @@ namespace r2warsTorneo
                 mm[nplayer] = actual.txtmemoria;
             }
         }
+        string padlines(string t,int maxlen=54)
+        {
+            string b = "";
+            string[] lineas = t.Split('\n');
+            foreach (string l in lineas)
+            {
+                if (l.Length > maxlen)
+                    b += l.Substring(0, maxlen) + "\n";
+                else
+                {
+                    string pad = "";
+                    for (int n = 0; n < maxlen - l.Length; n++)
+                        pad += " ";
+                    b += l + pad + "\n";
+                }
+            }
+            return b;
+        }
         void drawscreen(int nplayer)
         {
+
+
             // seleccionamos el offset actual y lo pintamos invertido
-            string dasm = Engine.players[nplayer].actual.dasm;
-            int i = dasm.IndexOf(Engine.players[nplayer].actual.ins);
+            string dasm = padlines(Engine.players[nplayer].actual.dasm);
+            string actual = padlines(Engine.players[nplayer].actual.ins);
+            int i = dasm.IndexOf(actual);
             if (i != -1)
             {
                 dasm = dasm.Insert(i + Engine.players[nplayer].actual.ins.Length, "</span>");
@@ -149,7 +170,7 @@ namespace r2warsTorneo
 
             lock (dd)
             {
-                dd[nplayer] = "Cycles:" + Engine.players[nplayer].actual.cycles.ToString() + "\nActual Instruction: \n" + Engine.players[nplayer].actual.ins + "\n\n" + dasm;
+                dd[nplayer] = "Cycles:" + Engine.players[nplayer].actual.cycles.ToString() + "\nActual Instruction:\n " + padlines(Engine.players[nplayer].actual.ins.Substring(16)) + "\n" + dasm;
             }
             lock (rr)
             {

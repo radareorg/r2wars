@@ -92,7 +92,7 @@ namespace r2warsTorneo
             ncombat++;
             SendDrawEvent(getstats());
             SendDrawEvent("on");
-            espera(1000);
+            espera(3000);
             SendDrawEvent("off");
             bCombatEnd = true;
         }
