@@ -807,10 +807,10 @@ namespace r2warsTorneo
             int x1 = dasm.IndexOf(PC[0]);
             string newins = dasm.Substring(x1, dasm.IndexOf('\n', x1) - x1);
             // esto es para debug y poder comprobar si los cambios de pancake funcionan pudes borrarlo en acabar
-            if (executedins.Contains("invalid") || executedins.Contains("unaligned"))
+            if (executedins.Contains("invalid") || executedins.Contains("unaligned") || pc<0 || pc>1024)
                 players[thisplayer].actual.dead = true;
 
-            if ((PC[1] != "" && PC[1] != "0x1") || executedins.Contains("invalid") || executedins.Contains("unaligned"))
+            if ((PC[1] != "" && PC[1] != "0x1") || executedins.Contains("invalid") || executedins.Contains("unaligned") ||  pc < 0 || pc > 1024)
                 players[thisplayer].actual.dead = true;
             else
                 players[thisplayer].actual.dead = false;
