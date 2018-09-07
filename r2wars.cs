@@ -433,7 +433,7 @@ namespace r2warsTorneo
                             return;
                         }
                         totalciclos++;
-                        if (totalciclos > 8000)
+                        if (totalciclos > 4000)
                         {
                             nexausted++;
                             if (nexausted > 2)
