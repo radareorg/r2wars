@@ -310,11 +310,16 @@ namespace r2warsTorneo
             {
                 MyEvent e1 = new MyEvent();
                 e1.message = "";
-                e1.ganador = Engine.otherplayer;
+                if (victorias[0] > victorias[1])
+
+                    e1.ganador = 0;
+                else
+                    e1.ganador = 1;
+
                 e1.round = nRound;
                 e1.ciclos = totalciclos;
                 if (!empate)
-                    e1.winnername = Engine.players[Engine.otherplayer].name;
+                    e1.winnername = Engine.players[e1.ganador].name;
                 else
                     e1.winnername = "Draw";
                 this.Event_combatEnd(this, e1);
