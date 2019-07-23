@@ -187,11 +187,11 @@ namespace r2warsTorneo
             this.cyclesfixed = cycles;
             this.txtmemoria = txtmemoria;
         }
-        public int ipc()
+        public long ipc()
         {
             if (pc != "")
             {
-                int ipc = Convert.ToInt32(pc.Substring(3), 16);
+                long ipc = Convert.ToInt64(pc.Substring(3), 16);
                 return ipc;
             }
             return -1;
@@ -358,7 +358,7 @@ namespace r2warsTorneo
                     this.r2[x].RunCommand("e asm.lines=false");
                     this.r2[x].RunCommand("e asm.flags=false");
                     this.r2[x].RunCommand("e asm.comments=false");
-                    this.r2[x].RunCommand("e cfg.r2wars=false");
+                    this.r2[x].RunCommand("e cfg.r2wars=true");
                     this.r2[x].RunCommand("aei");
                     this.r2[x].RunCommand("aeim");
                     initstate[x] = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
@@ -530,14 +530,14 @@ namespace r2warsTorneo
             return false;
         }
        
-        public int GetPC()
+        public long GetPC()
         {
             string tmp = this.r2[this.uidx].RunCommand("aer PC");
             string tmp1 = tmp.Substring(3).Replace("\r", "").Replace("\n", "");
-            int res = Convert.ToInt32(tmp1, 16);
+            long res = Convert.ToInt64(tmp1, 16);
             return res;
         }
-        public int GetPC(int nuser)
+        public long GetPC(int nuser)
         {
             switchUser(nuser);
             return GetPC();
@@ -746,7 +746,7 @@ namespace r2warsTorneo
             if (otherplayer >= players.Count)
                 otherplayer = 0;
             // Añadimos al log la instruccion que vamos a ejecutar
-            players[thisplayer].logAdd(new clsinfo(players[thisplayer].actual.pc, players[thisplayer].actual.ins, players[thisplayer].actual.dasm, players[thisplayer].actual.regs, players[thisplayer].actual.mem, players[thisplayer].actual.cycles + 1, txtmemoria));
+            //players[thisplayer].logAdd(new clsinfo(players[thisplayer].actual.pc, players[thisplayer].actual.ins, players[thisplayer].actual.dasm, players[thisplayer].actual.regs, players[thisplayer].actual.mem, players[thisplayer].actual.cycles + 1, txtmemoria));
 
 
             string res = this.r2[thisplayer].RunCommand(players[thisplayer].user + ";s PC;pd 1;aea*;aes;aerR;s PC;aoj 1;aer PC;?v 1+theend").Replace("\r", "");
@@ -770,8 +770,9 @@ namespace r2warsTorneo
                 if (ciclos < 0) ciclos = 0;
             }
             // Generamos la peticion de desensamblado del PC actual del jugador actual
-            int pc = Convert.ToInt32(PC[0].Substring(3), 16);
-            int otherpc = players[otherplayer].actual.ipc();
+            long pc = Convert.ToInt64(PC[0].Substring(3), 16);
+            //int pc = Convert.ToInt32(PC[0].Substring(3), 16);
+            long otherpc = players[otherplayer].actual.ipc();
             Dictionary<int, int> dicMemWrite = GetMemAccessWriteDict(mem);
             if (dicMemWrite.Count > 0)
             {

@@ -94,19 +94,28 @@ namespace r2warsTorneo
             return salida.Remove(salida.Length - 1);
 
         }
-        void pinta(int offset, string c, string s)
+        void pinta(long offset, string c, string s)
         {
             lock (memoria)
             {
-                if (offset>0 && offset<Engine.memsize)
+                if (offset>=0 && offset<Engine.memsize)
                     memoria[offset] = "\"" + c + s + "\"";
             }
+        }
+        public void testpinta()
+        {
+            initmemoria();
+            pinta(1023, "F");
+            pinta(0, "F");
+
+            send_draw_event(json_output());
+
         }
         void pinta(int offset, string c)
         {
             lock (memoria)
             {
-                if (offset > 0 && offset < Engine.memsize)
+                if (offset >= 0 && offset < Engine.memsize)
                     memoria[offset] = "\"" + c + "\"";
             }
         }
@@ -115,7 +124,10 @@ namespace r2warsTorneo
             lock (memoria)
             {
                 while ((count--) != 0)
-                    memoria[offset++] = "\"" + c + "\"";
+                    if (offset >= 0 && offset < 1024)
+                        memoria[offset++] = "\"" + c + "\"";
+                    else
+                        Console.WriteLine("Zascaaaaa");
             }
         }
         void drawplayerturn(int nplayer)
@@ -179,12 +191,12 @@ namespace r2warsTorneo
 
             if (Engine.players[nplayer].log.Count > 0)
             {
-                int oldPC = Engine.players[nplayer].log[Engine.players[nplayer].log.Count - 1].ipc();
+                long oldPC = Engine.players[nplayer].log[Engine.players[nplayer].log.Count - 1].ipc();
                 // quitamos la X de la posicion anterior
                 if (oldPC >= 0 && oldPC <= Engine.memsize)
                     pinta(oldPC, pColor[nplayer], "");
             }
-            int aPC= Engine.players[nplayer].actual.ipc(); 
+            long aPC= Engine.players[nplayer].actual.ipc(); 
             // ponemos la X en la posicion nueva
             if (aPC >= 0 && aPC <= Engine.memsize)
             {
@@ -350,7 +362,7 @@ namespace r2warsTorneo
             }
             else
             {
-                Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].actual.cycles + 1, getmemoria()));
+                //Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].actual.cycles + 1, getmemoria()));
             }
             Engine.switchUserIdx();
         }

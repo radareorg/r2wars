@@ -16,6 +16,7 @@ namespace r2warsTorneo
             else if (recv == "nextlog")
             {
                 r2warsStatic.r2w.nextLog();
+                //r2warsStatic.r2w.testpinta();
             }
             else if (recv == "next")
             {
