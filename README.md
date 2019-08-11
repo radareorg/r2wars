@@ -29,7 +29,7 @@ from the M
 
 ## Dependencies
 
-* Mono / .NET Runtime
+* Mono / .NET Runtime (always from mono project some distros packages dont work)
 * radare2
 
 On windows you need to have radare2.exe and rasm2.exe in the same
