@@ -19,6 +19,7 @@ namespace r2warsTorneo
 {
     public class r2wars
     {
+        private const int MAX_CYCLES = 4000;
         public clsEngine Engine = null;
         public bool bThreadIni = false;
         public bool bStopProcess = false;
@@ -102,6 +103,17 @@ namespace r2warsTorneo
                     memoria[offset] = "\"" + c + s + "\"";
             }
         }
+        void pinta(long offset,  string c,string s,int count)
+        {
+            lock (memoria)
+            {
+                while ((count--) != 0)
+                    if (offset >= 0 && offset < 1024)
+                        memoria[offset++] = "\"" + c + s + "\"";
+                    else
+                        Console.WriteLine("Zascaaaaa");
+            }
+        }
         public void testpinta()
         {
             initmemoria();
@@ -166,10 +178,22 @@ namespace r2warsTorneo
             }
             return b;
         }
+        void drawPC(int nplayer)
+        {
+            long oldPC = Engine.players[nplayer].actual.oldpc;
+            if (oldPC >= 0 && oldPC <= Engine.memsize)
+            {
+                pinta(oldPC, pColor[nplayer], "", Engine.players[nplayer].actual.oldpcsize);
+            }
+            long aPC = Engine.players[nplayer].actual.ipc();
+            // ponemos la X en la posicion nueva
+            if (aPC >= 0 && aPC <= Engine.memsize)
+            {
+                pinta(aPC, pColor[nplayer], "X", Engine.players[nplayer].actual.pcsize);
+            }
+        }
         void drawscreen(int nplayer)
         {
-
-
             // seleccionamos el offset actual y lo pintamos invertido
             string dasm = padlines(Engine.players[nplayer].actual.dasm);
             string actual = padlines(Engine.players[nplayer].actual.ins);
@@ -188,20 +212,7 @@ namespace r2warsTorneo
             {
                 rr[nplayer] = Engine.players[nplayer].actual.formatregs();
             }
-
-            if (Engine.players[nplayer].log.Count > 0)
-            {
-                long oldPC = Engine.players[nplayer].log[Engine.players[nplayer].log.Count - 1].ipc();
-                // quitamos la X de la posicion anterior
-                if (oldPC >= 0 && oldPC <= Engine.memsize)
-                    pinta(oldPC, pColor[nplayer], "");
-            }
-            long aPC= Engine.players[nplayer].actual.ipc(); 
-            // ponemos la X en la posicion nueva
-            if (aPC >= 0 && aPC <= Engine.memsize)
-            {
-                pinta(aPC, pColor[nplayer], "X");
-            }
+          
         }
         void drawmemaccess(int nplayer)
         {
@@ -232,36 +243,38 @@ namespace r2warsTorneo
                 }
             }
         }
+        private void resetTablero()
+        {
+            initmemoria();
+            pinta(Engine.GetAddressProgram(0), Engine.GetSizeProgram(0), "b");
+            pinta(Engine.GetAddressProgram(1), Engine.GetSizeProgram(1), "r");
+            send_draw_event(json_output());
+        }
         private void update(int n)
         {
-            if (n == 1)
+            
+            if (bDead)
             {
-                if (bDead)
-                {
-                    // Dibujamos la info del jugador que relizo la instruccion de muerte
-                    clsinfo ins = Engine.players[Engine.thisplayer].logGetPrev();
-                    //drawslogcreen(Engine.thisplayer, ins);
-                    drawplayerturn(Engine.thisplayer);
-                }
-                else
-                {
-                    drawmemaccess(Engine.thisplayer);
-                    // Dibujamos la info del jugador
-                    drawscreen(Engine.thisplayer);
-                    // dibujamos la info del nuevo jugador
-                    drawscreen(Engine.otherplayer);
-                    // ponemos el marco del jugador actual
-                    drawplayerturn(Engine.otherplayer);
-                }
+                // Dibujamos la info del jugador que relizo la instruccion de muerte
+                clsinfo ins = Engine.players[Engine.thisplayer].logGetPrev();
+                //drawslogcreen(Engine.thisplayer, ins);
+                drawplayerturn(Engine.thisplayer);
             }
-            if (n==0)
+            else
             {
-                initmemoria();
-                pinta(Engine.GetAddressProgram(0), Engine.GetSizeProgram(0), "b");
-                pinta(Engine.GetAddressProgram(1), Engine.GetSizeProgram(1), "r");
-
+                  
+                // Dibujamos la info del jugador
+                drawscreen(Engine.thisplayer);
+                drawPC(Engine.thisplayer);
+                // dibujamos la info del nuevo jugador
+                drawscreen(Engine.otherplayer);
+                drawPC(Engine.otherplayer);
+                // ponemos el marco del jugador actual
+                drawplayerturn(Engine.otherplayer);
+                // Dibujamos los accesos a memoria
+                drawmemaccess(Engine.thisplayer);
             }
-            send_draw_event(json_output());
+        send_draw_event(json_output());
         }
         private void RoundExhausted()
         {
@@ -279,7 +292,7 @@ namespace r2warsTorneo
                 e3.winnername = "";
                 Event_roundExhausted(this, e3);
             }
-            update(0);
+            resetTablero();
             totalciclos = 0;
         }
         private bool RoundEnd()
@@ -310,7 +323,7 @@ namespace r2warsTorneo
                 {
                     Engine.ReiniciaGame(true);
                     // Actualizamos la pantalla indicando que pinte los programas
-                    update(0);
+                    resetTablero();
                 }
                 return false;
             }
@@ -356,31 +369,74 @@ namespace r2warsTorneo
             {
                 // Realizamos el STEP
                 bDead = Engine.stepInfoNew(getmemoria());
-                update(1);
-                if (bWait)
-                    espera(2, 1);
+                //update(1);
+                if (bDead)
+                {
+                    // Dibujamos la info del jugador que relizo la instruccion de muerte
+                    clsinfo ins = Engine.players[Engine.thisplayer].logGetPrev();
+                    //drawslogcreen(Engine.thisplayer, ins);
+                    drawplayerturn(Engine.thisplayer);
+                }
+                else
+                {
+                    // Dibujamos la info del jugador
+                    drawPC(Engine.thisplayer);
+                    // dibujamos la info del nuevo jugador
+                    drawPC(Engine.otherplayer);
+                    // Dibujamos los accesos a memoria
+                    drawmemaccess(Engine.thisplayer);
+                }
+                
             }
             else
             {
                 //Engine.players[Engine.thisplayer].logAdd(new clsinfo(Engine.players[Engine.thisplayer].actual.pc, Engine.players[Engine.thisplayer].actual.ins, Engine.players[Engine.thisplayer].actual.dasm, Engine.players[Engine.thisplayer].actual.regs, Engine.players[Engine.thisplayer].actual.mem, Engine.players[Engine.thisplayer].actual.cycles + 1, getmemoria()));
             }
+            // ponemos el marco del jugador actual
+            drawplayerturn(Engine.otherplayer);
+            drawscreen(Engine.thisplayer);
+            drawscreen(Engine.otherplayer);
+            send_draw_event(json_output());
+            if (bWait)
+                espera(2, 1);
             Engine.switchUserIdx();
         }
+        int stepnexausted = 0;
         public void stepCombate()
         {
             Debug.WriteLine("r2wars:stepCombate");
+            
             if (bInCombat)
             {
                 if (!bDead)
                 {
                     totalciclos++;
-                    if (totalciclos > 8000)
+                    /*if (totalciclos > MAX_CYCLES)
                     {
                         RoundExhausted();
                         return;
                     }
                     ExecuteRoundInstruction(false);
-                    update(1);
+                    */
+                    if (totalciclos > MAX_CYCLES)
+                    {
+                        stepnexausted++;
+                        if (stepnexausted > 2)
+                        {
+                            bInCombat = false;
+                            bThreadIni = false;
+                            bStopProcess = false;
+                            CombatEnd(true);
+                            stepnexausted = 0;
+                            Debug.WriteLine("stepCombate: Fin(draw)");
+                            return;
+                        }
+                        else
+                        {
+                            RoundExhausted();
+                        }
+                    }
+                    ExecuteRoundInstruction(false);
                 }
                 else
                 {
@@ -414,11 +470,13 @@ namespace r2warsTorneo
                 pinta(Engine.GetAddressProgram(), Engine.GetSizeProgram(), "r");
                 // dibujamos la pantalla del jugador 1
                 drawscreen(1);//, Engine.players[1].actual.ins, Engine.players[1].actual.dasm, Engine.players[1].actual.regs, Engine.players[1].actual.ipc());
+                drawPC(1);
                 // seteamos el jugador 0
                 Engine.switchUser(0);
                 pinta(Engine.GetAddressProgram(), Engine.GetSizeProgram(), "b");
                 // dibujamos la pantalla del jugador 0 
                 drawscreen(0);//, Engine.players[0].actual.ins, Engine.players[0].actual.dasm, Engine.players[0].actual.regs, Engine.players[0].actual.ipc());
+                drawPC(0);
                 // ponemos el marco en el jugador0
                 drawplayerturn(0);
                 return true;
@@ -445,7 +503,7 @@ namespace r2warsTorneo
                             return;
                         }
                         totalciclos++;
-                        if (totalciclos > 4000)
+                        if (totalciclos > MAX_CYCLES)
                         {
                             nexausted++;
                             if (nexausted > 2)
@@ -471,7 +529,9 @@ namespace r2warsTorneo
                         break;
                     }
                     else
+                    {
                         bDead = false;
+                    }
                 }
                 bInCombat = false;
                 bThreadIni = false;

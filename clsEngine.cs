@@ -166,7 +166,11 @@ namespace r2warsTorneo
     }
     public class clsinfo
     {
+        
         public string pc = "";
+        public int pcsize = 0;
+        public int oldpcsize = 0;
+        public long oldpc = 0;
         public string ins = "";
         public string dasm = "";
         public string regs = "";
@@ -178,6 +182,9 @@ namespace r2warsTorneo
 
         public clsinfo(string pc, string ins, string dasm, string regs, string mem, int cycles, string txtmemoria)
         {
+            this.oldpcsize = 0;
+            this.pcsize = 0;
+            this.oldpc = 0;
             this.pc = pc;
             this.ins = ins;
             this.dasm = dasm;
@@ -191,7 +198,7 @@ namespace r2warsTorneo
         {
             if (pc != "")
             {
-                long ipc = Convert.ToInt64(pc.Substring(3), 16);
+                long ipc = Convert.ToInt64(pc.Substring(2), 16);
                 return ipc;
             }
             return -1;
@@ -281,11 +288,43 @@ namespace r2warsTorneo
             return log[idxlog];
         }
     }
+    public class Range<T>
+    {
+        /// <summary>Minimum value of the range.</summary>
+        public T Minimum { get; set; }
+
+        /// <summary>Maximum value of the range.</summary>
+        public T Maximum { get; set; }
+
+        public Range(T min, T max)
+        {
+            Minimum = min;
+            Maximum = max;
+        }
+    }
+
+    public static class RandomExtension
+    {
+        static Random random = new Random();
+
+        public static int NextFromRanges(this Random random, List<Range<int>> ranges)
+        {
+            int randomRange = random.Next(0, ranges.Count);
+            return random.Next(ranges[randomRange].Minimum, ranges[randomRange].Maximum);
+        }
+
+        public static double NextDoubleFromRanges(this Random random, List<Range<double>> ranges)
+        {
+            int randomRange = random.Next(0, ranges.Count);
+            double doubleNrRange = ranges[randomRange].Maximum - ranges[randomRange].Minimum;
+            return ranges[randomRange].Minimum + random.NextDouble() * doubleNrRange;
+        }
+    }
     public class clsEngine
     {
         public  int memsize = 1024;
         public int maxprogsize = 64;
-        private string [] initstate = { "", "" };
+        private string[] initstate = { "", "","","","","","","" };
         private IR2Pipe[] r2 = { null, null };
         private int nPlayers = 0;
         public int uidx = 0;
@@ -302,7 +341,7 @@ namespace r2warsTorneo
             p.WaitForExit();
             return output;
         }
-        List<int> get_random_offsets(int nRandoms)
+        /*List<int> get_random_offsets(int nRandoms)
         {
             System.Random rnd = new System.Random();
             List<int> rand = new List<int>();
@@ -324,26 +363,31 @@ namespace r2warsTorneo
                 }
             }
             return rand;
-        }
+        }*/
+        
+
         public string Init(string[] files, string[] usernames)
         {
             players.Clear();
-            initstate[0] = "";
-            initstate[1] = "";
             Console.WriteLine("r2path =  " + r2paths.r2);
             if (File.Exists(r2paths.r2) || !OperatingSystem.IsWindows())
             {
-                List<int> offsets;
+                //List<int> offsets = null;4
                 string file = "";
                 string strname = "";
                 string cone = string.Format("-w malloc://{0}", memsize);
                 // inicializamos las 2 instancias de r2, si ya estan inicializadas restauramos el estado inicial
                 nPlayers = files.Count();
-                offsets = get_random_offsets(this.nPlayers);
+                //offsets = get_random_offsets(this.nPlayers);
+                /////
+                Random rnd = new Random(Environment.TickCount & Int32.MaxValue);
+                int finrango = 0;
+                int addr = 0;
+                int lastlen = 0;
                 for (int x = 0; x < this.nPlayers; x++)
                 {
                     file = files[x];
-                    int addr = offsets[x];
+                    //int addr = offsets[x];
                     r2archs.eArch arch = r2archs.archfromfileext(file);
                     string r2params = r2archs.r2param(arch);
                     string rasm2params = r2archs.rasm2param(arch);
@@ -351,6 +395,7 @@ namespace r2warsTorneo
                     {
                         this.r2[x] = new R2Pipe(cone, r2paths.r2);
                     }
+                
                     this.r2[x].RunCommand("pd");
                     // seleccionamos la arch
                     this.r2[x].RunCommand(r2params);
@@ -359,29 +404,82 @@ namespace r2warsTorneo
                     this.r2[x].RunCommand("e asm.flags=false");
                     this.r2[x].RunCommand("e asm.comments=false");
                     this.r2[x].RunCommand("e cfg.r2wars=true");
-                    this.r2[x].RunCommand("aei");
-                    this.r2[x].RunCommand("aeim");
-                    initstate[x] = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
+
+                    // guardamos el estado inicial de esil para esta arch
+                    if (initstate[(int)arch] == "")
+                    {
+                        this.r2[x].RunCommand("aei");
+                        this.r2[x].RunCommand("aeim");
+                        initstate[(int)arch] = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
+                    }
+                    // si ya tenemos estado guardado restauramos los registros
+                    else
+                    {
+                        this.r2[x].RunCommand(initstate[(int)arch]);
+                        this.r2[x].RunCommand("aei");
+                        this.r2[x].RunCommand("aeim");
+                    }
                     // reseteamos la memoria
                     this.r2[x].RunCommand(string.Format("w0 {0} @ 0", memsize));
-
+                    
+                    // compilamos el programa del usuario
                     string src = RunAndGetOutput(r2paths.rasm2, string.Format("{0} -f {1}", rasm2params, file)).Replace("\r", "").Replace("\n", "");
                     if (src == "")
                     {
                         return "Invalid source";
                     }
-                    Console.WriteLine("Rasm Output =  " + src);
-                    // Añadimos el codigo a radare2
+                    int lenSource = (src.Length / 2);
+                    Console.WriteLine("==== LOADING WARRIOR ====");
+                    Console.WriteLine(" rasm params = {0} {1}", rasm2params, file);
+                    Console.WriteLine(" Rasm Output = {0}", src);
+                    Console.WriteLine(" Rasm size   = {0}", lenSource);
+                    Console.WriteLine("=========================");
+
+                    // calculamos donde poner el codigo en la arena
+                    List<Range<int>> intRanges = new List<Range<int>>();
+                    if (finrango == 0)
+                    {
+                        finrango = 1024 - lenSource;
+                        intRanges.Add(new Range<int>(0, finrango));
+                        addr = rnd.NextFromRanges(intRanges);
+                        if (addr % 4 != 0)
+                            addr -= addr % 4;
+                        lastlen = lenSource;
+                    }
+                    else
+                    {
+                        int inicioProgramaAnterior = addr;
+                        int finProgramaAnterior = addr + lastlen;
+                        while (true)
+                        {
+                            finrango = 1024 - lenSource;
+                            intRanges.Add(new Range<int>(0, finrango));
+                            addr = rnd.NextFromRanges(intRanges);
+                            if (addr % 4 != 0)
+                                addr -= addr % 4;
+                            if ((addr + lenSource < 1024))
+                                if (addr + lenSource < inicioProgramaAnterior ||  addr > finProgramaAnterior)
+                                    break;
+
+
+                        }
+                    }
+
+                    // Añadimos el codigo del jugador
                     string cmd = string.Format("wx {0} @ {1}", src, addr);
                     this.r2[x].RunCommand(cmd);
+                    // Configuramos PC
                     cmd = string.Format("aer PC={0}", addr);
                     this.r2[x].RunCommand(cmd);
+                    // Configuramos STACK
                     cmd = string.Format("aer SP=SP+{0}", addr);
                     this.r2[x].RunCommand(cmd);
+                    // Obtenemos los registros para esta partida/jugador
                     string initRegs = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
+
                     // generamos el jugador
                     strname = usernames[x];
-                    // Iniciamos el jugador añadiendo sus datos de programa, ciclos
+                    // Iniciamos el jugador añadiendo sus datos de programa
                     player p = new player(strname, addr, src.Length / 2, src, initRegs);
                     // lo añadimos a la lista de jugadores
                     players.Add(p);
@@ -391,6 +489,10 @@ namespace r2warsTorneo
                     players[x].actual.dasm = GetFullProgram(x);
                     players[x].actual.regs = GetRegs(x);
                     players[x].actual.pc = "0x" + GetPC(x).ToString("X8");
+                    players[x].actual.pcsize = GetPCSize(x);
+
+                    players[x].actual.oldpc =4096;
+                    players[x].actual.oldpcsize = 0;
                     players[x].actual.mem = GetMemAccessRAW(x);
                     // borramos el log
                     p.log.Clear();
@@ -400,63 +502,110 @@ namespace r2warsTorneo
                     this.r2[x].RunCommand("e cmd.esil.ioer=f theend=1");
                     this.r2[x].RunCommand("f theend=0");
                     this.r2[x].RunCommand(string.Format("b {0}", memsize));
-                }
-                string arenap0 = string.Format("wx {0}@{1}", players[0].code, players[0].orig);
-                string arenap1 = string.Format("wx {0}@{1}", players[1].code, players[1].orig);
-                this.r2[0].RunCommand(arenap1);
-                this.r2[1].RunCommand(arenap0);
+                    
 
-                //string t1 = r2[0].RunCommand("px 1024@0");
-                //string t2 = r2[1].RunCommand(string.Format("px 1024@0"));
-                //if (t2 != t1)
-                  //  return "error de memoria";
+                }
                 if (players.Count < 2)
                 {
                     return "You need at least 2 users";
                 }
-                // sincronizamos ambas arenas con el codigo de cada warrior
+                
                 return "OK";
             }
             return "NOK";
         }
         public bool ReiniciaGame(bool bNew)
         {
-            List<int> offsets = get_random_offsets(this.nPlayers);
+            //List<int> offsets = get_random_offsets(this.nPlayers);
             string cmd = "";
-            
+            Random rnd = new Random(Environment.TickCount & Int32.MaxValue);
+            int finrango = 0;
+            int addr = 0;
+            int lastlen = 0;
             for (int x = 0; x < this.nPlayers; x++)
             {
-                this.r2[x].RunCommand(string.Format("w0 {0} @ 0", memsize));
-                this.r2[x].RunCommand(players[x].userini);
-                players[x].user = players[x].userini;
                 if (bNew)
                 {
-                    // ponemos la nueva direccion
-                    players[x].orig = offsets[x];
-                    // restauramos el contexto inicial
-                    this.r2[x].RunCommand(players[x].user);
-                    // ponemos el nuevo PC
-                    cmd = string.Format("aer PC={0}", offsets[x]);
+
+                    // calculamos donde poner el codigo en la arena
+                    List<Range<int>> intRanges = new List<Range<int>>();
+                    if (finrango == 0)
+                    {
+                        finrango = 1024 - players[x].size;
+                        intRanges.Add(new Range<int>(0, finrango));
+                        addr = rnd.NextFromRanges(intRanges);
+                        if (addr % 4 != 0)
+                            addr -= addr % 4;
+                        lastlen = players[x].size;
+                    }
+                    else
+                    {
+                        int inicioProgramaAnterior = addr;
+                        int finProgramaAnterior = addr + lastlen;
+                        while (true)
+                        {
+                            finrango = 1024 - players[x].size;
+                            intRanges.Add(new Range<int>(0, finrango));
+                            addr = rnd.NextFromRanges(intRanges);
+                            if (addr % 4 != 0)
+                                addr -= addr % 4;
+                            if ((addr + players[x].size < 1024))
+                                if (addr + players[x].size < inicioProgramaAnterior || addr > finProgramaAnterior)
+                                    break;
+
+
+                        }
+                    }
+
+
+
+                    // restauramos el estado inicial de ESIL para este jugador/arch
+                    this.r2[x].RunCommand(players[x].userini);
+                    // Configuramos PC
+                    cmd = string.Format("aer PC={0}", addr);
                     this.r2[x].RunCommand(cmd);
-                    // obtenemos los registros
+                    // Configuramos STACK
+                    cmd = string.Format("aer SP=SP+{0}", addr);
+                    this.r2[x].RunCommand(cmd);
+        
+
+
+                    // ponemos la nueva direccion
+                    players[x].orig = addr;
+
+                    // obtenemos los registros 
                     string initRegs = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
-                    // actualizamos los registros iniciales del usuario
+                    //// actualizamos los registros iniciales del usuario
                     players[x].user = initRegs;
-                    players[x].userini = initRegs;
                 }
                 else
                 {
                     // restauramos el contexto inicial
-                    this.r2[x].RunCommand(players[x].user);
+                    this.r2[x].RunCommand(players[x].userini);
                 }
+
+                // ponemos a 0 la arena completa
+                this.r2[x].RunCommand(string.Format("w0 {0} @ 0", memsize));
+                
+                // sincronizamos ambas arenas con el codigo de cada warrior
                 cmd = string.Format("wx {0} @ {1}", players[x].code, players[x].orig);
                 this.r2[x].RunCommand(cmd);
-                // Actualizamos la informacion del PC actual
+
+
+                // Actualizamos la informacion del Jugador actual
+                int ciclos = GetPCInstructionCycles(x);
+                players[x].actual.cycles = ciclos;
                 players[x].actual.ins = GetPCInstruction(x);
                 players[x].actual.dasm = GetFullProgram(x);
                 players[x].actual.regs = GetRegs(x);
                 players[x].actual.pc = "0x" + GetPC(x).ToString("X8");
+                players[x].actual.pcsize = GetPCSize(x);
+
+                players[x].actual.oldpc = 4096;
+                players[x].actual.oldpcsize = 0;
                 players[x].actual.mem = GetMemAccessRAW(x);
+
+
                 // borramos el log
                 players[x].log.Clear();
                 this.r2[x].RunCommand("e cmd.esil.todo=f theend=1");
@@ -464,12 +613,9 @@ namespace r2warsTorneo
                 this.r2[x].RunCommand("e cmd.esil.intr=f theend=1");
                 this.r2[x].RunCommand("e cmd.esil.ioer=f theend=1");
                 this.r2[x].RunCommand("f theend=0");
+
+            
             }
-            // sincronizamos ambas arenas con el codigo de cada warrior
-            string arenap0 = string.Format("wx {0}@{1}", players[0].code, players[0].orig);
-            string arenap1 = string.Format("wx {0}@{1}", players[1].code, players[1].orig);
-            this.r2[0].RunCommand(arenap1);
-            this.r2[1].RunCommand(arenap0);
             return true;
         }
        
@@ -533,7 +679,7 @@ namespace r2warsTorneo
         public long GetPC()
         {
             string tmp = this.r2[this.uidx].RunCommand("aer PC");
-            string tmp1 = tmp.Substring(3).Replace("\r", "").Replace("\n", "");
+            string tmp1 = tmp.Substring(2).Replace("\r", "").Replace("\n", "");
             long res = Convert.ToInt64(tmp1, 16);
             return res;
         }
@@ -541,6 +687,18 @@ namespace r2warsTorneo
         {
             switchUser(nuser);
             return GetPC();
+        }
+        public int GetPCSize()
+        {
+            string tmp = this.r2[this.uidx].RunCommand("s PC;?v $l");
+            string tmp1 = tmp.Substring(2).Replace("\r", "").Replace("\n", "");
+            int res = Convert.ToInt32(tmp1, 16);
+            return res;
+        }
+        public int GetPCSize(int nuser)
+        {
+            switchUser(nuser);
+            return GetPCSize();
         }
         public string GetPCInstruction()
         {
@@ -749,7 +907,7 @@ namespace r2warsTorneo
             //players[thisplayer].logAdd(new clsinfo(players[thisplayer].actual.pc, players[thisplayer].actual.ins, players[thisplayer].actual.dasm, players[thisplayer].actual.regs, players[thisplayer].actual.mem, players[thisplayer].actual.cycles + 1, txtmemoria));
 
 
-            string res = this.r2[thisplayer].RunCommand(players[thisplayer].user + ";s PC;pd 1;aea*;aes;aerR;s PC;aoj 1;aer PC;?v 1+theend").Replace("\r", "");
+            string res = this.r2[thisplayer].RunCommand(players[thisplayer].user + ";s PC;pd 1;aea*;aes;aerR;s PC;aoj 1;?en sizeopcode=;?v $l;aer PC;?v 1+theend").Replace("\r", "");
             string[] lines = res.Split('\n');
             string executedins = lines[0];
             lines[0] = "";
@@ -757,20 +915,28 @@ namespace r2warsTorneo
             string[] memaccess = lines.Where(i => i.StartsWith("f")).ToArray();
             string[] json = lines.Where(i => i.StartsWith("[")).ToArray();
             string[] PC = lines.Where(i => i.StartsWith("0x")).ToArray();
+            string[] PCsize = lines.Where(i => i.StartsWith("sizeopcode=")).ToArray();
             string userregs = string.Join(";", regs);
             string regs1 = string.Join("\n", regs).Replace("aer ", "");
             string mem = string.Join("\n", memaccess);
             string j = json[0];
             int ini = j.IndexOf("cycles");
             int ciclos = 0;
+      
             if (ini > 0)
             {
                 string tmp = j.Substring(ini + 8, j.IndexOf(",", ini + 8) - (ini + 8));
                 int.TryParse(tmp, out ciclos);
                 if (ciclos < 0) ciclos = 0;
             }
+            int ipcsize = 0;
+            if (PCsize[0].Length>0)
+            {
+                ipcsize = Convert.ToInt32(PCsize[0].Substring(13), 16);
+            }
+            
             // Generamos la peticion de desensamblado del PC actual del jugador actual
-            long pc = Convert.ToInt64(PC[0].Substring(3), 16);
+            long pc = Convert.ToInt64(PC[0].Substring(2), 16);
             //int pc = Convert.ToInt32(PC[0].Substring(3), 16);
             long otherpc = players[otherplayer].actual.ipc();
             Dictionary<int, int> dicMemWrite = GetMemAccessWriteDict(mem);
@@ -785,8 +951,8 @@ namespace r2warsTorneo
                     // write on other player
                     q = string.Format("wx {0}@{1}", r, i.Key);
                     this.r2[otherplayer].RunCommand(q);
-                    string t1 = r2[0].RunCommand(string.Format("px 1024@0"));
-                    string t2 = r2[1].RunCommand(string.Format("px 1024@0"));
+                    //string t1 = r2[0].RunCommand(string.Format("px 1024@0"));
+                    //string t2 = r2[1].RunCommand(string.Format("px 1024@0"));
                 }
             }
             // Generamos la peticion de desensamblado del PC del otro jugador
@@ -824,8 +990,14 @@ namespace r2warsTorneo
             if (players[this.uidx].actual.cycles == -1)
                 players[this.uidx].actual.cyclesfixed = ciclos;
             players[this.uidx].actual.cycles = ciclos;
+            // guardamos el antiguo puntero a instruccion 
+            players[thisplayer].actual.oldpc = players[thisplayer].actual.ipc();
+            players[thisplayer].actual.oldpcsize = players[thisplayer].actual.pcsize;
+
             // Actualizamos la instruccion actual
             players[thisplayer].actual.pc = PC[0];
+            players[thisplayer].actual.pcsize = ipcsize;
+
             players[thisplayer].actual.ins = newins;
             players[thisplayer].actual.mem = mem;
             players[thisplayer].actual.dasm = dasm;
