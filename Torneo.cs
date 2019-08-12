@@ -27,7 +27,8 @@ namespace r2warsTorneo
         string actualCombatLog = "";
         string warriorsDirectory = "warriors";
         bool bTournamenTask = false;
-        bool bCombatEnd = true;
+        public bool bCombatEnd = true;
+        public bool bWaitToResumeTournament = false;
         bool bTournamentRun = false;
 
         public Torneo()
@@ -94,9 +95,12 @@ namespace r2warsTorneo
             SendDrawEvent("on");
             espera(3000);
             SendDrawEvent("off");
-            bCombatEnd = true;
+            if (r2w.bStopAtRoundStart == false)
+                bCombatEnd = true;
+            else
+                bWaitToResumeTournament = true;
         }
-        void runnextcombat(bool startcombat)
+        void runnextcombat()
         {
             if (ncombat < allcombats.Count)
             {
@@ -115,7 +119,7 @@ namespace r2warsTorneo
                 bCombatEnd = false;
                 string s = "{\"console\":\"" + actualCombatLog + "\"}";
                 SendDrawEvent(s);
-                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], startcombat, false);
+                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], false);
             }
             else
             {
@@ -245,7 +249,7 @@ namespace r2warsTorneo
         {
             if (bTournamentRun == false)
             {
-                RunTournamentCombats(false);
+                RunTournamentCombats();
                // r2w.bInCombat = true;
             }
             else if (r2w.bThreadIni == false)
@@ -254,7 +258,7 @@ namespace r2warsTorneo
                 r2w.stepCombate();
             }
         }
-        public void RunTournamentCombats(bool startcombat)
+        public void RunTournamentCombats()
         {
            
             if (bTournamentRun == false)
@@ -270,11 +274,12 @@ namespace r2warsTorneo
                     {
                         if (bCombatEnd == true)
                         {
-                            runnextcombat(startcombat);
-                            //startcombat = true;
+                            runnextcombat();
                         }
                         else
+                        {
                             Thread.Sleep(100);
+                        }
                     }
                     bTournamenTask = false;
                     System.Diagnostics.Debug.WriteLine("TournamenTask: Fin.");

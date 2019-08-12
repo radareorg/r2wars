@@ -28,13 +28,13 @@ namespace r2warsTorneo
             }
             else if (recv == "start_tournament")
             {
-                r2warsStatic.torneo.RunTournamentCombats(true);
+                r2warsStatic.torneo.RunTournamentCombats();
             }
             else if (recv == "stop_tournament")
             {
                 r2warsStatic.torneo.StopActualCombat();
             }
-            else if(recv=="moreflow")
+            else if (recv == "moreflow")
             {
                 r2warsStatic.r2w.sync_var = true;
                 msg = "none";
@@ -47,6 +47,46 @@ namespace r2warsTorneo
             {
                 r2warsStatic.r2w.answer = "x86";
             }
+
+            else if (recv == "cmd_dbg1")
+            {
+                r2warsStatic.torneo.LoadTournamentPlayers();
+            }
+            else if (recv == "cmd_dbg2")
+            {
+                r2warsStatic.r2w.bStopAtRoundStart = true;
+                r2warsStatic.r2w.bStopAtRoundEnd = true;
+                if (r2warsStatic.torneo.bWaitToResumeTournament)
+                {
+                    r2warsStatic.torneo.bWaitToResumeTournament = false;
+                    r2warsStatic.torneo.bCombatEnd = true;
+                }
+                else
+                {
+                    r2warsStatic.torneo.RunTournamentCombats();
+                }
+            }
+            else if (recv == "cmd_dbg3")
+            {
+                r2warsStatic.r2w.bStopAtRoundStart = false;
+                r2warsStatic.r2w.bStopAtRoundEnd = false;
+                if (r2warsStatic.torneo.bWaitToResumeTournament)
+                {
+                    r2warsStatic.torneo.bWaitToResumeTournament = false;
+                    r2warsStatic.torneo.bCombatEnd = true;
+
+                }
+                else
+                {
+
+                    r2warsStatic.torneo.RunTournamentCombats();
+                }
+            }
+            else if (recv == "cmd_dbg4")
+            {
+                r2warsStatic.torneo.StopActualCombat();
+            }
+
             if (msg!="")
                 Send(msg);
         }
