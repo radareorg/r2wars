@@ -4,37 +4,51 @@
 var clicked = false;
 var clicked1 = false;
 document.addEventListener('DOMContentLoaded', function () {
-  $('reset').addEventListener('click', () => {
-      socket.send("reset_tournament");
-      document.getElementById("start").innerHTML = "start";
-      clicked = false;
-    });
-  $('start').addEventListener('click', () => {
-    if (clicked === false) {
-        socket.send("start_tournament");
-        document.getElementById("start").innerHTML ="pause";
-        clicked = true;
-	}
-	else if (clicked === true) {
-        document.getElementById("start").innerHTML ="continue";
-        socket.send("stop_tournament");
-        clicked = false;
-    }
-  });
-  $('next').addEventListener('click', () => {
-    socket.send("next");
-
-  });
-  $('buffer').addEventListener('click', () => {
+  $('cmd_scores').addEventListener('click', () => {
       on();
   });
   $('lt').addEventListener('click', () => {
-      socket.send("prevlog");
+      socket.send("cmd_prevlog");
 
   });
   $('gt').addEventListener('click', () => {
-      socket.send("nextlog");
+      socket.send("cmd_nextlog");
   });
+  $('cmd_load').addEventListener('click', () => {
+      socket.send("cmd_load");
+
+  });
+  $('cmd_run').addEventListener('click', () => {
+      socket.send("cmd_run");
+
+  });
+  $('cmd_stop').addEventListener('click', () => {
+      socket.send("cmd_stop");
+
+  });
+  $('cmd_next').addEventListener('click', () => {
+      socket.send("cmd_next");
+
+  });
+  $('dbg4').addEventListener('click', () => {
+      if (document.getElementById("dbg4").checked) {
+          socket.send("cmd_dbg4si");
+      }
+      else {
+          socket.send("cmd_dbg4");
+      }
+
+  });
+  $('dbg5').addEventListener('click', () => {
+      if (document.getElementById("dbg5").checked) {
+          socket.send("cmd_dbg5si");
+      }
+      else {
+          socket.send("cmd_dbg5");
+      }
+
+  });
+
   $('x86').addEventListener('click', () => {
       hideArchDlg();
       socket.send("arch_x86")
@@ -45,30 +59,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   $('nowarriorsdlg').addEventListener('click', () => {
       hideNoWarriorsDlg();
-  });
-  $('dbg1').addEventListener('click', () => {
-      socket.send("cmd_dbg1");
-
-  });
-  $('dbg2').addEventListener('click', () => {
-      socket.send("cmd_dbg2");
-
-  });
-  $('dbg3').addEventListener('click', () => {
-      socket.send("cmd_dbg3");
-
-  });
-  $('dbg4').addEventListener('click', () => {
-      socket.send("cmd_dbg4");
-
-  });
-  $('dbg5').addEventListener('click', () => {
-      socket.send("cmd_dbg5");
-
-  });
-  $('dbg6').addEventListener('click', () => {
-      socket.send("cmd_dbg6");
-
   });
 
   updateUI();
@@ -539,21 +529,18 @@ tr {
 <td>
 <table style="width:100%">
 <tr>
-  <td><button id="reset">Load Warriors</button></td>
-  <td><button id="start">Start</button></td>
-  <td><button id="next">Next</button></td>
-  <td><button id="buffer">Scores</button></td>
+  <td><button id="cmd_scores">Scores</button></td>
   <td><button id="lt">&lt;</button></td>
   <td><button id="gt">&gt;</button></td>
 </tr>
-<tr>
-    <td><button id="dbg1">Load</button></td>
-    <td><button id="dbg2">Run</button></td>
-    <td><button id="dbg3">RunFull</button></td>
-    <td><button id="dbg4">dbg4</button></td>
-    <td><button id="dbg5">dbg5</button></td>
-    <td><button id="dbg6">dbg6</button></td>
-</tr>
+    <tr>
+        <td><button id="cmd_load">Load</button></td>
+        <td><button id="cmd_run">Run</button></td>
+        <td><button id="cmd_stop">Stop</button></td>
+        <td><button id="cmd_next">Next</button></td>
+        <td><input type="checkbox" id="dbg4" value="si">Stop on ini</td>
+        <td><input type="checkbox" id="dbg5" value="si">Stop on end</td>
+    </tr></tr>
 </table>
 </td>
  </tr>

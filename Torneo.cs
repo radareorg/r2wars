@@ -247,7 +247,12 @@ namespace r2warsTorneo
         }
         public void StepTournamentCombats()
         {
-            if (bTournamentRun == false)
+            if (bWaitToResumeTournament)
+            {
+                bWaitToResumeTournament = false;
+                bCombatEnd = true;
+            }
+            else if (bTournamentRun == false)
             {
                 RunTournamentCombats();
                // r2w.bInCombat = true;
@@ -260,8 +265,12 @@ namespace r2warsTorneo
         }
         public void RunTournamentCombats()
         {
-           
-            if (bTournamentRun == false)
+            if (bWaitToResumeTournament)
+            {
+                bWaitToResumeTournament = false;
+                bCombatEnd = true;
+            }
+            else if (bTournamentRun == false)
             {
                 fullCombatLog = "Tournament start " + DateTime.Now + "\\n";
                 bTournamentRun = true;
@@ -285,7 +294,7 @@ namespace r2warsTorneo
                     System.Diagnostics.Debug.WriteLine("TournamenTask: Fin.");
                 });
             }
-            else
+            else if (r2w.bThreadIni == false)
                 r2w.iniciaCombate();
         }
     }

@@ -25,8 +25,8 @@ namespace r2warsTorneo
         public bool bStopProcess = false;
         public bool bInCombat = false;
         public bool sync_var = false;
-        public bool bStopAtRoundEnd = true;
-        public bool bStopAtRoundStart = true;
+        public bool bStopAtRoundEnd = false;
+        public bool bStopAtRoundStart = false;
         public event MyHandler1 Event_draw;
         public event MyHandler1 Event_roundEnd;
         public event MyHandler1 Event_combatEnd;
@@ -383,47 +383,6 @@ namespace r2warsTorneo
                 espera(2, 1);
             Engine.switchUserIdx();
         }
-        public void stepCombate()
-        {
-            Debug.WriteLine("r2wars:stepCombate");
-            
-            if (bInCombat)
-            {
-                if (!bDead)
-                {
-                    totalciclos++;
-                    if (totalciclos > MAX_CYCLES)
-                    {
-                        nExausted++;
-                        if (nExausted > 2)
-                        {
-                            bInCombat = false;
-                            bThreadIni = false;
-                            bStopProcess = false;
-                            CombatEnd(true);
-                            nExausted = 0;
-                            Debug.WriteLine("stepCombate: Fin(draw)");
-                            return;
-                        }
-                        else
-                        {
-                            RoundExhausted();
-                        }
-                    }
-                    ExecuteRoundInstruction(false);
-                }
-                else
-                {
-                   // bool bAllRoundEnd = RoundEnd();
-                    //if (bAllRoundEnd || bSingleRound)
-                    {
-                        CombatEnd();
-                    }
-                    //else
-                      //  bDead = false;
-                }
-            }
-        }
         public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2)
         {
             initmemoria();
@@ -457,7 +416,77 @@ namespace r2warsTorneo
             }
             return false;
         }
+
+
+
         bool bResetArena = false;
+        public void stepCombate()
+        {
+            Debug.WriteLine("r2wars:stepCombate");
+            if (bInCombat)
+            {
+
+                if (!bDead)
+                {
+                    if (bResetArena)
+                    {
+                        bResetArena = false;
+                        Engine.ReiniciaGame(true);
+                        // Actualizamos la pantalla indicando que pinte los programas
+                        resetTablero();
+                        drawPC(Engine.thisplayer);
+                        drawPC(Engine.otherplayer);
+                        drawscreen(Engine.thisplayer);
+                        drawscreen(Engine.otherplayer);
+                        send_draw_event(json_output());
+                        return;
+                    }
+
+                    totalciclos++;
+                    if (totalciclos > MAX_CYCLES)
+                    {
+                        nExausted++;
+                        if (nExausted > 2)
+                        {
+                            bInCombat = false;
+                            bThreadIni = false;
+                            bStopProcess = false;
+                            CombatEnd(true);
+                            nExausted = 0;
+                            return;
+                        }
+                        else
+                        {
+                            RoundExhausted();
+                            totalciclos = 0;
+                            bResetArena = true;
+                            return;
+                        }
+                    }
+                    ExecuteRoundInstruction(false);
+                }
+                else
+                {
+                    victorias[Engine.thisplayer]++;
+                    if (nRound == 3 || victorias[1] == 2 || victorias[0] == 2)
+                    {
+                        bInCombat = false;
+                        bThreadIni = false;
+                        bStopProcess = false;
+                        RoundEnd();
+                        CombatEnd();
+                    }
+                    else
+                    {
+                        RoundEnd();
+                        bDead = false;
+                        totalciclos = 0;
+                        bResetArena = true;
+                        nRound++;
+                    }
+                }
+            }
+        }
         public void iniciaCombate()
         {
             gameLoopTask = Task.Factory.StartNew(() =>
@@ -491,7 +520,10 @@ namespace r2warsTorneo
                             drawscreen(Engine.otherplayer);
                             send_draw_event(json_output());
                             if (bStopAtRoundEnd)
+                            {
+                                bThreadIni = false;
                                 return;
+                            }
                         }
 
                         totalciclos++;
@@ -514,7 +546,10 @@ namespace r2warsTorneo
                                 totalciclos = 0;
                                 bResetArena = true;
                                 if (bStopAtRoundEnd)
+                                {
+                                    bThreadIni = false;
                                     return;
+                                }
                             }
                         }
                         ExecuteRoundInstruction(false);
@@ -538,7 +573,10 @@ namespace r2warsTorneo
                         bResetArena = true;
                         nRound++;
                         if (bStopAtRoundEnd)
+                        {
+                            bThreadIni = false;
                             break;
+                        }
                     }
                 }
               
