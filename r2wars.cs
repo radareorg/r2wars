@@ -113,8 +113,8 @@ namespace r2warsTorneo
                 while ((count--) != 0)
                     if (offset >= 0 && offset < 1024)
                         memoria[offset++] = "\"" + c + s + "\"";
-                    else
-                        Console.WriteLine("Zascaaaaa");
+                    //else
+                      //  Console.WriteLine("Zascaaaaa");
             }
         }
         public void testpinta()
@@ -141,8 +141,8 @@ namespace r2warsTorneo
                 while ((count--) != 0)
                     if (offset >= 0 && offset < 1024)
                         memoria[offset++] = "\"" + c + "\"";
-                    else
-                        Console.WriteLine("Zascaaaaa");
+                    //else
+                      //  Console.WriteLine("Zascaaaaa");
             }
         }
         void drawplayerturn(int nplayer)
@@ -379,7 +379,7 @@ namespace r2warsTorneo
                 drawscreen(Engine.otherplayer);
                 send_draw_event(json_output());
             }
-            if (bWait)
+            //if (bWait)
                 espera(2, 1);
             Engine.switchUserIdx();
         }

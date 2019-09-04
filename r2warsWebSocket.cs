@@ -68,15 +68,22 @@ namespace r2warsTorneo
         private void R2wars_EventPinta(object sender, MyEvent e)
         {
             r2warsStatic.r2w.sync_var = false;
+            //System.Console.WriteLine(e.message);
             Send(e.message);
         }
+        protected override void OnError(ErrorEventArgs e)
+        {
+            base.OnError(e);
+        }
+
         protected override void OnClose(CloseEventArgs e)
         {
+            r2warsStatic.r2w.Event_draw -= h1;
             base.OnClose(e);
         }
         protected override void OnOpen()
         {
-            r2warsStatic.r2w.Event_draw -= h1;
+            //r2warsStatic.r2w.Event_draw -= h1;
             h1 = new MyHandler1(R2wars_EventPinta);
             r2warsStatic.r2w.Event_draw += h1;
             base.OnOpen();
