@@ -19,7 +19,7 @@ namespace r2warsTorneo
 {
     public class r2wars
     {
-        private const int MAX_CYCLES = 4000;
+        private const int MAX_CYCLES = 2000;
         public clsEngine Engine = null;
         public bool bThreadIni = false;
         public bool bStopProcess = false;

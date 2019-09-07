@@ -870,8 +870,7 @@ namespace r2warsTorneo
         {
             if (players.Count > 0)
                 return players[nuser].name;
-            else
-                return "";
+            return "";
         }
         public int GetAddressProgram()
         {

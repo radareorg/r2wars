@@ -4,6 +4,12 @@ R2W=r2wars-$(VERSION)
 all:
 	msbuild r2wars.sln
 
+run:
+	mono bin/Release/r2wars.exe
+
+ls:
+	$(SHELL) lsbots.sh
+
 dist:
 	msbuild r2wars.sln /p:Configuration=Release
 	rm -rf $(R2W)
