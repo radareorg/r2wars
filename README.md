@@ -1,6 +1,6 @@
 # r2wars
 
-C# implementation for r2wars tournament
+The C# implementation of the r2wars tournament competition
 
 Tournament api from: https://github.com/otac0n/tournaments
 
