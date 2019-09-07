@@ -75,7 +75,7 @@ namespace r2warsTorneo
         }
         string getstats()
         {
-            string stats = string.Format("Combat {0} / {1}", ncombat, allcombats.Count) + "\\n";
+            string stats = string.Format("Combat {0} / {1}", ncombat, allcombats.Count) + "\\n\\n";
             var standings = generator.GenerateRankings();
             foreach (var standing in standings)
             {

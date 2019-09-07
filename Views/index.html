@@ -270,23 +270,56 @@ button {
 
 .addr {
   color:white;
+  text-align:center;
   background-color:black;
+  font-weight: bold;
+  width: 6em;
+}
+
+.div1 {
+  position:absolute;
+  top:0px;
+  left:0px;
+  width:30%;
+  height:100%;
+  overflow-x:hidden;
+}
+
+.divM {
+  position:absolute;
+  top:0px;
+  left:30%;
+  right:30%;
+  height:100%;
+  overflow-x:scroll;
+}
+
+.div2 {
+  position:absolute;
+  top:0px;
+  right:0px;
+  width:30%;
+  height:100%;
+  overflow-x:hidden;
 }
 
 .memory {
   overflow-y: hidden;
   height:100%;
+  background-color:#303030;
 }
 
 .box {
   width:1em;
   height:1em;
+  text-align:center;
   color: white;
   background-color:#a0a0a0;
+  font-weight: bold;
 }
 
 .console {
-  height: 200px;
+  height: 20em;
   background-color:black;
   color:white;
   font-family: Courier New;
@@ -297,6 +330,7 @@ button {
 .console1 {
   height: 200px;
   background-color:black;
+  width: 100%;
   color:white;
   font-family: Courier New;
   font-weight:bold;
@@ -306,14 +340,15 @@ button {
 }
 
 .console2 {
-  height: 550px;
+  height: 100%;
   background-color:black;
   color:springgreen;
   font-family: Courier New;
   font-weight:bold;
+  width: 100%;
   white-space: pre;
   overflow-x: hidden;
-  overflow-y: hidden
+  overflow-y: hidden;
 }
 
 .s {
@@ -324,7 +359,7 @@ button {
   white-space: pre;
 }
 body {
-  background-color:#c0c0c0;
+  background-color:#909090;
 }
 
 td {
@@ -339,19 +374,25 @@ tr {
 }
 .player1 {
   background-color:blue;
+  width:100%;
   color:white;
   font-weight:bold;
   font-size:2em;
-  font-family: Courier New;
-  text-align:center;
+  font-family: Consolas, Courier New;
+  overflow-x:hidden;
+  text-align:left;
+  padding-left:2em;
 }
 .player2 {
   color:white;
+  width:100%;
   background-color:red;
   font-weight:bold;
   font-size:2em;
-  font-family: Courier New;
-  text-align:center;
+  font-family: Consolas, Courier New;
+  overflow-x:hidden;
+  text-align:left;
+  padding-left:0em;
 }
 
 .memtable {
@@ -362,21 +403,22 @@ tr {
 .overlay {
     display: none;
     top: 1%;
-    left: 25%;
-    right: 25%;
+    width: 60%;
+    right: 20%;
     bottom: 20%;
     background-color:rgba(0, 0, 0, 0.9);
     z-index: 2;
     cursor: pointer;
     position: absolute;
     border-radius: 6px;
-    border: 1px solid #a0a0a0
+    border: 3px solid #a0a0a0
 }
 
 .text{
     position: absolute;
     top: 4%;
     left: 50%;
+font-weight: bold;
     font-size: 40px;
     color: springgreen;
     transform: translate(-50%,-50%);
@@ -384,10 +426,11 @@ tr {
 }
 .text1{
     position: absolute;
+    font-weight: bold;
     top: 14%;
     left: 50%;
-    font-size: 20px;
-    color: springgreen;
+    font-size: 2em;
+    color: white;
     transform: translate(-50%,0%);
     -ms-transform: translate(-50%,0%);
     white-space: pre;
@@ -431,6 +474,34 @@ tr {
   font-weight: bold;
   font-size: 16px;
   line-height: 16px;
+}
+
+.legend1 {
+  position:absolute;
+  top: 10px;
+  z-index:2;
+  background-color:#202020;
+  left: 10px;
+  font-weight:bold;
+  text-align:center;
+}
+
+.legend2 {
+  position:absolute;
+  top: 10px;
+  z-index:2;
+  background-color:#202020;
+  right:10px;
+  font-weight:bold;
+  text-align:left;
+}
+
+.legend {
+  font-weight:bold;
+  text-align:center;
+  width:10px;
+  max-width:10px;
+  height:1em;
 }
 
 .win98 button {
@@ -500,33 +571,40 @@ tr {
     </div>
 </div>
 
-<table style="width:100%;height:100%">
+<div class="legend1">
+<table>
 <tr>
-
-<td style="width:30%">
+            <td class="legend" style="background-color:aqua">R</td>
+            <td class="legend" style="background-color:violet">W</td>
+</tr>
+</table>
+</div>
+<div class="div1">
     <table style="height:100%;width:100%">
         <tr>
             <td class="player1" id=player1>Player 1</td>
         </tr>
         <tr style="height:100%">
-             <td valign=top>
+             <td valign=top style="overflow-x:hidden">
                 <div class=console1 id=regs1>regs</div>
                 <div style="border: 1px solid #a0a0a0"></div>
                 <div class=console2 id=code1>code</div>
             </td>
         </tr>
     </table>
-</td>
+</div>
 
-
-
-<td style="width:30%">
- <table style="height:100%;width:100%">
+<div class="divM">
+<center>
+<div style="width:100%;text-align:center;overflow-x:scroll">
+ <table style="height:100%;overflow-x:scroll;width:100%">
  <tr style="height:100%">
   <td valign=top><div class=memory id=memory>memory</div></td>
  </tr>
  <tr style="height:100%">
+
 <td>
+
 <table style="width:100%">
     <tr>
         <td><button id="cmd_load">Load</button></td>
@@ -552,24 +630,33 @@ tr {
  <td id="status">status</td>
  </tr>
  </table>
-</td>
+</center>
+</div>
+</div>
 
-<td style="width:30%">
+<div class="legend2">
+<table>
+<tr>
+            <td class="legend" style="background-color:orange">R</td>
+            <td class="legend" style="background-color:yellow">W</td>
+</tr>
+</table>
+</div>
+
+<div class="div2">
+<div style="width:100%;height:100%;overflow-x:hidden">
     <table style="height:100%;width:100%">
          <tr>
             <td class="player2" id=player2>Player 2</td>
          </tr>
          <tr style="height:100%">
-            <td valign=top height="100%">
+            <td valign=top style="overflow-x:hidden" height="100%" colspan=3>
                 <div class=console1 id=regs2>regs</div>
                 <div style="border: 1px solid #a0a0a0"></div>
                 <div class=console2 id=code2>code</div>
             </td>
          </tr>
     </table>
-</td>
-
-</tr>
-</table>
+</div>
 </body>
 </html>

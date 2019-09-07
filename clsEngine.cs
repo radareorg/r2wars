@@ -396,15 +396,17 @@ namespace r2warsTorneo
                         this.r2[x] = new R2Pipe(cone, r2paths.r2);
                     }
                 
-                    this.r2[x].RunCommand("pd");
                     // seleccionamos la arch
                     this.r2[x].RunCommand(r2params);
+                    //this.r2[x].RunCommand("e cfg.sandbox=true");
+                    //  this.r2[x].RunCommand("e asm.bytes=0");
                     this.r2[x].RunCommand("e scr.color=false");
                     this.r2[x].RunCommand("e asm.lines=false");
                     this.r2[x].RunCommand("e asm.flags=false");
                     this.r2[x].RunCommand("e asm.comments=false");
                     this.r2[x].RunCommand("e cfg.r2wars=true");
 
+                    this.r2[x].RunCommand("pd");
                     // guardamos el estado inicial de esil para esta arch
                     if (initstate[(int)arch] == "")
                     {
@@ -1013,7 +1015,7 @@ namespace r2warsTorneo
             {
                 if (s.StartsWith("oeax") == false)
                 {
-                    if (x % 3 == 0 && x != 0)
+                    if (x % 2 == 0 && x != 0)
                         regformat += "\n";
                     regformat += s + " ";
                     x++;
