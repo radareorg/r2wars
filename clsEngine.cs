@@ -17,6 +17,7 @@ namespace r2warsTorneo
             gb,
             x86,
             x64,
+            i8051,
             unknow
         }
         public static string archName(eArch _arch)
@@ -35,6 +36,8 @@ namespace r2warsTorneo
 
             if (_arch == eArch.gb)
                 return "gb 16 bits";
+            if (_arch == eArch.i8051)
+                return "8051 8 bits";
 
             if (_arch == eArch.x86)
                 return "x86 32 bits";
@@ -64,6 +67,8 @@ namespace r2warsTorneo
 
             if (ext.Contains(".gb."))
                 return eArch.gb;
+            if (ext.Contains(".8051."))
+                return eArch.i8051;
             return eArch.unknow;
         }
         public static string rasm2param(eArch _arch)
@@ -82,6 +87,8 @@ namespace r2warsTorneo
 
             if (_arch == eArch.gb)
                 return "-a gb -b 16";
+            if (_arch == eArch.i8051)
+                return "-a 8051";
 
             if (_arch == eArch.x86)
                 return "-a x86 -b 32";
@@ -105,6 +112,8 @@ namespace r2warsTorneo
 
             if (_arch == eArch.gb)
                 return "e asm.arch=gb;e asm.bits=16";
+            if (_arch == eArch.i8051)
+                return "e asm.arch=8051;e asm.cpu=8051-shared-code-xdata";
 
             if (_arch == eArch.x86)
                 return "e asm.arch=x86;e asm.bits=32";
@@ -324,7 +333,7 @@ namespace r2warsTorneo
     {
         public  int memsize = 1024;
         public int maxprogsize = 64;
-        private string[] initstate = { "", "","","","","","","" };
+        private string[] initstate = { "", "","","","","","","","" };
         private IR2Pipe[] r2 = { null, null };
         private int nPlayers = 0;
         public int uidx = 0;
