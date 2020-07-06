@@ -13,6 +13,8 @@ for  a in warriors/* ; do
 		rasm2 -a arm -b 16 -f $a |wc -c
 	elif [ "`echo $a | grep mips-32`" ]; then
 		rasm2 -a mips -b 32 -f $a |wc -c
+	elif [ "`echo $a | grep 8051`" ]; then
+		rasm2 -a 8051 -f $a |wc -c
 	fi
 done
 ) |awk '{print $2"\t"$1}'
