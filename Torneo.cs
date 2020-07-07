@@ -106,7 +106,7 @@ namespace r2warsTorneo
                     actualcombatscore[j].Score += new HighestPointsScore(0);
                     j++;
                 }
-                string tmp = string.Format("Combat initialized {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
+                string tmp = string.Format("Starting combat {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
                 actualCombatLog = tmp + "\\n";
                 fullCombatLog += tmp + "\\n";
                 bCombatEnd = false;
