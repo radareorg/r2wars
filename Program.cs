@@ -28,9 +28,6 @@ namespace r2warsTorneo
                 nancyHost.Start();
                 Console.WriteLine("Web server running at " + httpUrl);
 
-                /* Process.Start(httpUrl); */
-
-
                 while (!ct.IsCancellationRequested) { Thread.Sleep(1000); }
                 nancyHost.Stop();
             }, tokenSource.Token);
