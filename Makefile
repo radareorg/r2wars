@@ -1,14 +1,8 @@
 VERSION=$(shell git tag|tail -n1)
 R2W=r2wars-$(VERSION)
 
-ifeq ($(OS),Windows_NT)
-BUILD := msbuild
-else
-BUILD := xbuild
-endif
-
 all:
-	$(BUILD) r2wars.sln
+	msbuild r2wars.sln
 
 run:
 	mono bin/Release/r2wars.exe
@@ -17,7 +11,7 @@ ls:
 	$(SHELL) lsbots.sh
 
 dist:
-	$(BUILD) r2wars.sln /p:Configuration=Release
+	msbuild r2wars.sln /p:Configuration=Release
 	rm -rf $(R2W)
 	mkdir -p $(R2W)
 	cp -rf examples bin/Release/*.exe bin/Release/*.dll $(R2W)
