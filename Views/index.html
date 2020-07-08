@@ -4,37 +4,51 @@
 var clicked = false;
 var clicked1 = false;
 document.addEventListener('DOMContentLoaded', function () {
-  $('reset').addEventListener('click', () => {
-      socket.send("reset_tournament");
-      document.getElementById("start").innerHTML = "start";
-      clicked = false;
-    });
-  $('start').addEventListener('click', () => {
-    if (clicked === false) {
-        socket.send("start_tournament");
-        document.getElementById("start").innerHTML ="pause";
-        clicked = true;
-	}
-	else if (clicked === true) {
-        document.getElementById("start").innerHTML ="continue";
-        socket.send("stop_tournament");
-        clicked = false;
-    }
-  });
-  $('next').addEventListener('click', () => {
-    socket.send("next");
-
-  });
-  $('buffer').addEventListener('click', () => {
+  $('cmd_scores').addEventListener('click', () => {
       on();
   });
   $('lt').addEventListener('click', () => {
-      socket.send("prevlog");
+      socket.send("cmd_prevlog");
 
   });
   $('gt').addEventListener('click', () => {
-      socket.send("nextlog");
+      socket.send("cmd_nextlog");
   });
+  $('cmd_load').addEventListener('click', () => {
+      socket.send("cmd_load");
+
+  });
+  $('cmd_run').addEventListener('click', () => {
+      socket.send("cmd_run");
+
+  });
+  $('cmd_stop').addEventListener('click', () => {
+      socket.send("cmd_stop");
+
+  });
+  $('cmd_next').addEventListener('click', () => {
+      socket.send("cmd_next");
+
+  });
+  $('dbg4').addEventListener('click', () => {
+      if (document.getElementById("dbg4").checked) {
+          socket.send("cmd_dbg4si");
+      }
+      else {
+          socket.send("cmd_dbg4");
+      }
+
+  });
+  $('dbg5').addEventListener('click', () => {
+      if (document.getElementById("dbg5").checked) {
+          socket.send("cmd_dbg5si");
+      }
+      else {
+          socket.send("cmd_dbg5");
+      }
+
+  });
+
   $('x86').addEventListener('click', () => {
       hideArchDlg();
       socket.send("arch_x86")
@@ -187,7 +201,7 @@ function Ajax(method, uri, body, fn) {
         if (typeof (XMLHttpRequest) == 'undefined') {
                 return false;
         }
-      
+
         console.log('async waiting');
         if (ajax_in_process) {
                 setTimeout(function() {
@@ -195,17 +209,17 @@ function Ajax(method, uri, body, fn) {
                         }, 100);
                 return false;
         }
-     
+
 
         var x = new XMLHttpRequest();
-       
+
         if (!x) {
                 return false;
         }
         ajax_in_process = true;
-    
+
         x.open(method, uri, false);
-    
+
         x.setRequestHeader('Accept', 'text/plain');
         x.setRequestHeader ('Accept', 'text/html');
         x.onreadystatechange = function() {
@@ -241,7 +255,7 @@ function showNoWarriorsDlg() {
 function hideNoWarriorsDlg() {
     document.getElementById("nowarriorsdlg").style.display = "none";
 }
-    display: none;
+display: none;
 </script>
 
 <style>
@@ -254,23 +268,56 @@ button {
 
 .addr {
   color:white;
+  text-align:center;
   background-color:black;
+  font-weight: bold;
+  width: 6em;
+}
+
+.div1 {
+  position:absolute;
+  top:0px;
+  left:0px;
+  width:30%;
+  height:100%;
+  overflow-x:hidden;
+}
+
+.divM {
+  position:absolute;
+  top:0px;
+  left:30%;
+  right:30%;
+  height:100%;
+  overflow-x:scroll;
+}
+
+.div2 {
+  position:absolute;
+  top:0px;
+  right:0px;
+  width:30%;
+  height:100%;
+  overflow-x:hidden;
 }
 
 .memory {
-  overflow-y: scroll;
+  overflow-y: hidden;
   height:100%;
+  background-color:#303030;
 }
 
 .box {
   width:1em;
   height:1em;
+  text-align:center;
   color: white;
   background-color:#a0a0a0;
+  font-weight: bold;
 }
 
 .console {
-  height: 200px;
+  height: 20em;
   background-color:black;
   color:white;
   font-family: Courier New;
@@ -281,19 +328,25 @@ button {
 .console1 {
   height: 200px;
   background-color:black;
+  width: 100%;
   color:white;
   font-family: Courier New;
   font-weight:bold;
   white-space: pre;
+  overflow-y: hidden;
+  overflow-x: hidden;
 }
 
 .console2 {
-  height: 400px;
+  height: 100%;
   background-color:black;
-  color:green;
+  color:springgreen;
   font-family: Courier New;
   font-weight:bold;
+  width: 100%;
   white-space: pre;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .s {
@@ -304,7 +357,7 @@ button {
   white-space: pre;
 }
 body {
-  background-color:#c0c0c0;
+  background-color:#909090;
 }
 
 td {
@@ -319,54 +372,63 @@ tr {
 }
 .player1 {
   background-color:blue;
+  width:100%;
   color:white;
   font-weight:bold;
   font-size:2em;
-  font-family: Courier New;
-  text-align:center;
+  font-family: Consolas, Courier New;
+  overflow-x:hidden;
+  text-align:left;
+  padding-left:2em;
 }
 .player2 {
   color:white;
+  width:100%;
   background-color:red;
   font-weight:bold;
   font-size:2em;
-  font-family: Courier New;
-  text-align:center;
+  font-family: Consolas, Courier New;
+  overflow-x:hidden;
+  text-align:left;
+  padding-left:0em;
 }
 
 .memtable {
   font-size: 10px;
+  width: 100%;
 }
 
 .overlay {
     display: none;
     top: 1%;
-    left: 30%;
-    right: 30%;
-    bottom: 27%;
+    width: 80%;
+    right: 10%;
+    bottom: 10%;
     background-color:rgba(0, 0, 0, 0.9);
     z-index: 2;
     cursor: pointer;
     position: absolute;
     border-radius: 6px;
-    border: 1px solid #a0a0a0
+    border: 3px solid #a0a0a0
 }
 
 .text{
     position: absolute;
     top: 4%;
     left: 50%;
+font-weight: bold;
     font-size: 40px;
-    color: green;
+    color: springgreen;
     transform: translate(-50%,-50%);
     -ms-transform: translate(-50%,-50%);
 }
 .text1{
     position: absolute;
+    font-weight: bold;
     top: 14%;
     left: 50%;
-    font-size: 20px;
-    color: green;
+    font-size: 2em;
+    color: white;
     transform: translate(-50%,0%);
     -ms-transform: translate(-50%,0%);
     white-space: pre;
@@ -412,6 +474,34 @@ tr {
   line-height: 16px;
 }
 
+.legend1 {
+  position:absolute;
+  top: 10px;
+  z-index:2;
+  background-color:#202020;
+  left: 10px;
+  font-weight:bold;
+  text-align:center;
+}
+
+.legend2 {
+  position:absolute;
+  top: 10px;
+  z-index:2;
+  background-color:#202020;
+  right:10px;
+  font-weight:bold;
+  text-align:left;
+}
+
+.legend {
+  font-weight:bold;
+  text-align:center;
+  width:10px;
+  max-width:10px;
+  height:1em;
+}
+
 .win98 button {
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: none;
@@ -444,7 +534,7 @@ tr {
   border-left-color: #808080;
   border-right-color: #dfdfdf;
   border-bottom-color: #dfdfdf;
-} 
+}
 </style>
 <body>
 <div id="overlay" class="overlay" onclick="off()">
@@ -468,7 +558,6 @@ tr {
         </center>
     </div>
 </div>
-
 <div id="nowarriorsdlg" class='win98'>
     <div class='header'>
         Warriors not found:
@@ -480,41 +569,54 @@ tr {
     </div>
 </div>
 
-<table style="width:100%;height:100%">
+<div class="legend1">
+<table>
 <tr>
-
-<td style="width:30%">
+            <td class="legend" style="background-color:aqua">R</td>
+            <td class="legend" style="background-color:violet">W</td>
+</tr>
+</table>
+</div>
+<div class="div1">
     <table style="height:100%;width:100%">
         <tr>
             <td class="player1" id=player1>Player 1</td>
         </tr>
         <tr style="height:100%">
-             <td valign=top>
+             <td valign=top style="overflow-x:hidden">
                 <div class=console1 id=regs1>regs</div>
                 <div style="border: 1px solid #a0a0a0"></div>
                 <div class=console2 id=code1>code</div>
             </td>
         </tr>
     </table>
-</td>
+</div>
 
-
-
-<td style="width:30%">
- <table style="height:100%;width:100%">
+<div class="divM">
+<center>
+<div style="width:100%;text-align:center;overflow-x:scroll">
+ <table style="height:100%;overflow-x:scroll;width:100%">
  <tr style="height:100%">
   <td valign=top><div class=memory id=memory>memory</div></td>
  </tr>
  <tr style="height:100%">
+
 <td>
+
 <table style="width:100%">
-<tr>
-  <td><button id="reset">Load Warriors</button></td>
-  <td><button id="start">Start</button></td>
-  <td><button id="next">Next</button></td>
-  <td><button id="buffer">Scores</button></td>
-  <td><button id="lt">&lt;</button></td>
-  <td><button id="gt">&gt;</button></td>
+    <tr>
+        <td><button id="cmd_load">Load</button></td>
+        <td><button id="cmd_run">Run</button></td>
+        <td><button id="cmd_stop">Stop</button></td>
+        <td><button id="cmd_next">Next</button></td>
+        <td><button id="cmd_scores">Scores</button></td>
+        <td><button id="lt">&lt;</button></td>
+        <td><button id="gt">&gt;</button></td>
+    </tr>
+    <tr>
+        <td><input type="checkbox" id="dbg4" value="si">Stop on ini</td>
+        <td><input type="checkbox" id="dbg5" value="si">Stop on end</td>
+    </tr>
 </tr>
 </table>
 </td>
@@ -526,24 +628,33 @@ tr {
  <td id="status">status</td>
  </tr>
  </table>
-</td>
+</center>
+</div>
+</div>
 
-<td style="width:30%">
+<div class="legend2">
+<table>
+<tr>
+            <td class="legend" style="background-color:yellow">R</td>
+            <td class="legend" style="background-color:orange">W</td>
+</tr>
+</table>
+</div>
+
+<div class="div2">
+<div style="width:100%;height:100%;overflow-x:hidden">
     <table style="height:100%;width:100%">
          <tr>
             <td class="player2" id=player2>Player 2</td>
          </tr>
          <tr style="height:100%">
-            <td valign=top height="100%">
+            <td valign=top style="overflow-x:hidden" height="100%" colspan=3>
                 <div class=console1 id=regs2>regs</div>
                 <div style="border: 1px solid #a0a0a0"></div>
                 <div class=console2 id=code2>code</div>
             </td>
          </tr>
     </table>
-</td>
-
-</tr>
-</table>
+</div>
 </body>
 </html>

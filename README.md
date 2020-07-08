@@ -1,6 +1,6 @@
 # r2wars
 
-C# implementation for r2wars tournament
+The C# implementation of the r2wars tournament competition
 
 Tournament api from: https://github.com/otac0n/tournaments
 
@@ -29,7 +29,7 @@ from the M
 
 ## Dependencies
 
-* Mono / .NET Runtime
+* Mono / .NET Runtime (always from mono project some distros packages dont work)
 * radare2
 
 On windows you need to have radare2.exe and rasm2.exe in the same

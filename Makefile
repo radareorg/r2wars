@@ -10,6 +10,12 @@ endif
 all:
 	$(BUILD) r2wars.sln
 
+run:
+	mono bin/Release/r2wars.exe
+
+ls:
+	$(SHELL) lsbots.sh
+
 dist:
 	$(BUILD) r2wars.sln /p:Configuration=Release
 	rm -rf $(R2W)
