@@ -177,7 +177,7 @@ namespace r2warsTorneo
                 mm[nplayer] = actual.txtmemoria;
             }
         }
-        string padlines(string t,int maxlen=254)
+        string padlines(string t,int maxlen=54)
         {
             string b = "";
             string[] lineas = t.Split('\n');
