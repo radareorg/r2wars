@@ -177,7 +177,7 @@ namespace r2warsTorneo
                 mm[nplayer] = actual.txtmemoria;
             }
         }
-        string padlines(string t,int maxlen=54)
+        string padlines(string t,int maxlen=254)
         {
             string b = "";
             string[] lineas = t.Split('\n');
@@ -217,7 +217,7 @@ namespace r2warsTorneo
             int i = dasm.IndexOf(actual);
             if (i != -1)
             {
-                dasm = dasm.Insert(i + Engine.players[nplayer].actual.ins.Length, "</span>");
+                dasm = dasm.Insert(i + actual.Length, "</span>");
                 dasm = dasm.Insert(i, "<span class='s'>");
             }
 

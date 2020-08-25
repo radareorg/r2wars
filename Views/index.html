@@ -1,662 +1,667 @@
-﻿<html>
+﻿<script>
+    var clicked = false;
+    var clicked1 = false;
+    document.addEventListener('DOMContentLoaded', function () {
+      $('cmd_scores').addEventListener('click', () => {
+          on();
+      });
+      $('lt').addEventListener('click', () => {
+          socket.send("cmd_prevlog");
 
-<script>
-var clicked = false;
-var clicked1 = false;
-document.addEventListener('DOMContentLoaded', function () {
-  $('cmd_scores').addEventListener('click', () => {
-      on();
-  });
-  $('lt').addEventListener('click', () => {
-      socket.send("cmd_prevlog");
+      });
+      $('gt').addEventListener('click', () => {
+          socket.send("cmd_nextlog");
+      });
+      $('cmd_load').addEventListener('click', () => {
+          socket.send("cmd_load");
 
-  });
-  $('gt').addEventListener('click', () => {
-      socket.send("cmd_nextlog");
-  });
-  $('cmd_load').addEventListener('click', () => {
-      socket.send("cmd_load");
+      });
+      $('cmd_run').addEventListener('click', () => {
+          socket.send("cmd_run");
 
-  });
-  $('cmd_run').addEventListener('click', () => {
-      socket.send("cmd_run");
+      });
+      $('cmd_stop').addEventListener('click', () => {
+          socket.send("cmd_stop");
 
-  });
-  $('cmd_stop').addEventListener('click', () => {
-      socket.send("cmd_stop");
+      });
+      $('cmd_next').addEventListener('click', () => {
+          socket.send("cmd_next");
 
-  });
-  $('cmd_next').addEventListener('click', () => {
-      socket.send("cmd_next");
+      });
+      $('dbg4').addEventListener('click', () => {
+          if (document.getElementById("dbg4").checked) {
+              socket.send("cmd_dbg4si");
+          }
+          else {
+              socket.send("cmd_dbg4");
+          }
 
-  });
-  $('dbg4').addEventListener('click', () => {
-      if (document.getElementById("dbg4").checked) {
-          socket.send("cmd_dbg4si");
-      }
-      else {
-          socket.send("cmd_dbg4");
-      }
+      });
+      $('dbg5').addEventListener('click', () => {
+          if (document.getElementById("dbg5").checked) {
+              socket.send("cmd_dbg5si");
+          }
+          else {
+              socket.send("cmd_dbg5");
+          }
 
-  });
-  $('dbg5').addEventListener('click', () => {
-      if (document.getElementById("dbg5").checked) {
-          socket.send("cmd_dbg5si");
-      }
-      else {
-          socket.send("cmd_dbg5");
-      }
+      });
 
-  });
+      $('x86').addEventListener('click', () => {
+          hideArchDlg();
+          socket.send("arch_x86")
+      });
+      $('arm').addEventListener('click', () => {
+          hideArchDlg();
+          socket.send("arch_arm")
+      });
+      $('nowarriorsdlg').addEventListener('click', () => {
+          hideNoWarriorsDlg();
+      });
 
-  $('x86').addEventListener('click', () => {
-      hideArchDlg();
-      socket.send("arch_x86")
-  });
-  $('arm').addEventListener('click', () => {
-      hideArchDlg();
-      socket.send("arch_arm")
-  });
-  $('nowarriorsdlg').addEventListener('click', () => {
-      hideNoWarriorsDlg();
-  });
-
-  updateUI();
-});
+      updateUI();
+    });
 
 
-var state = {};
+    var state = {};
 
-resetState();
+    resetState();
 
-var socket = new WebSocket('ws://localhost:9966/r2wars');
-socket.onopen = function ()
-{
-};
-socket.onclose = function ()
-{
-};
+    var socket = new WebSocket('ws://localhost:9966/r2wars');
+    socket.onopen = function ()
+    {
+    };
+    socket.onclose = function ()
+    {
+    };
 
-socket.onmessage = function (evt) {
-    //alert(evt.data);
-    if (evt.data !== "none") {
+    socket.onmessage = function (evt) {
+        //alert(evt.data);
+        if (evt.data !== "none") {
 
-        if (evt.data == "on") {
-            on();
+            if (evt.data == "on") {
+                on();
+            }
+            else if (evt.data == "off") {
+                off();
+            }
+            else if (evt.data == "askarch") {
+                showArchDlg();
+            }
+            else if (evt.data == "nowarriors") {
+                showNoWarriorsDlg();
+            }
+            else {
+                state = JSON.parse(evt.data);
+                updateUI();
+                //socket.send("moreflow");
+            }
         }
-        else if (evt.data == "off") {
-            off();
-        }
-        else if (evt.data == "askarch") {
-            showArchDlg();
-        }
-        else if (evt.data == "nowarriors") {
-            showNoWarriorsDlg();
-        }
-        else {
-            state = JSON.parse(evt.data);
-            updateUI();
-            //socket.send("moreflow");
-        }
+    };
+
+    function resetState() {
+    state = {
+      player1: {
+        regs: '',
+        code: '',
+        name: 'Player - 1',
+      },
+      player2: {
+        regs: '',
+        code: '',
+        name: 'Player - 2',
+      },
+      memory: [
+        '',
+        '',
+        '',
+        '',
+      ],
+      console: '[r2wars]',
+      status: 'idle',
+      scores: ''
+    };
     }
-};
 
-function resetState() {
-state = {
-  player1: {
-    regs: '',
-    code: '',
-    name: 'Player - 1',
-  },
-  player2: {
-    regs: '',
-    code: '',
-    name: 'Player - 2',
-  },
-  memory: [
-    '',
-    '',
-    '',
-    '',
-  ],
-  console: '[r2wars]',
-  status: 'idle',
-  scores: ''
-};
-}
+    function updateUI() {
+      if (state.hasOwnProperty("memory"))
+      {
+          var memory = memoryWidget();
+          $('memory').innerHTML = memory;
+      }
+      if (state && state.status)
+        $('status').innerHTML = state.status;
+      if (state && state.console)
+        $('console').innerHTML = state.console;
+      if (state && state.player1 && state.player1.regs)
+        $('regs1').innerHTML = state.player1.regs;
+      if (state && state.player1 && state.player1.code)
+        $('code1').innerHTML = state.player1.code;
+      if (state && state.player2 && state.player2.regs)
+        $('regs2').innerHTML = state.player2.regs;
+      if (state && state.player2 && state.player2.code)
+        $('code2').innerHTML = state.player2.code;
+      if (state && state.player1 && state.player1.name)
+        $('player1').innerHTML = state.player1.name;
+      if (state && state.player2 && state.player2.name)
+        $('player2').innerHTML = state.player2.name;
+      if (state && state.scores)
+        $('scores').innerHTML = state.scores;
 
-function updateUI() {
-  if (state.hasOwnProperty("memory"))
-  {
-      var memory = memoryWidget();
-      $('memory').innerHTML = memory;
-  }
-  if (state && state.status)
-    $('status').innerHTML = state.status;
-  if (state && state.console)
-    $('console').innerHTML = state.console;
-  if (state && state.player1 && state.player1.regs)
-    $('regs1').innerHTML = state.player1.regs;
-  if (state && state.player1 && state.player1.code)
-    $('code1').innerHTML = state.player1.code;
-  if (state && state.player2 && state.player2.regs)
-    $('regs2').innerHTML = state.player2.regs;
-  if (state && state.player2 && state.player2.code)
-    $('code2').innerHTML = state.player2.code;
-  if (state && state.player1 && state.player1.name)
-    $('player1').innerHTML = state.player1.name;
-  if (state && state.player2 && state.player2.name)
-    $('player2').innerHTML = state.player2.name;
-  if (state && state.scores)
-    $('scores').innerHTML = state.scores;
-
-}
-
-function addrForRow(x) {
-  return "0x" + ("0000" + x.toString(16)).substr(-4);
-}
-
-function styler(x) {
-  var color='white';
-  switch(x) {
-  case 'r': color='red'; break;
-  case 'y': color='yellow'; break;
-  case 'g': color='green'; break;
-  case 'w': color='white'; break;
-  case 'n': color='black'; break;
-  case 'b': color='blue'; break;
-  case 'q': color='aqua'; break;
-  case 'o': color='orange'; break;
-  case 'v': color='violet'; break;
-  }
-  return 'background-color:'+ color;
-}
-
-function memoryWidget() {
-  var a = '<table class="memtable">';
-  var rows = 32;
-  var rowlen = 32;
-  for (i = 0; i<rows; i++) {
-    var addr = addrForRow(i * rowlen);
-    var row = "";
-    for (j = 0; j <rowlen;j++) {
-      var s = state.memory[(i * rowlen) + j];
-      var ch = ((s&&s.length) > 1)? s[1]: '&nbsp;';
-      var style = (s&&s.length > 0)? styler(s[0]): '';
-      row += '<td style="'+style+'" class="box">'+ch+'</td>'
     }
-    a += "<tr><td class='addr'>"+addr+"</td>"+row+"</tr>";
-  }
-  return a + '</table>';
-}
 
-function $(x) {
-  return document.getElementById(x);
-}
+    function addrForRow(x) {
+      return "0x" + ("0000" + x.toString(16)).substr(-4);
+    }
 
-function Query(c, cb) {
-  Ajax('GET', '/r2wars/' + encodeURI(c), '', function(x) { if (cb) { cb(x); } });
-}
-var ajax_in_process = false;
-function Ajax(method, uri, body, fn) {
-        if (typeof (XMLHttpRequest) == 'undefined') {
-                return false;
+    function styler(x) {
+      var color='white';
+      switch(x) {
+      case 'r': color='red'; break;
+      case 'y': color='yellow'; break;
+      case 'g': color='green'; break;
+      case 'w': color='white'; break;
+      case 'n': color='black'; break;
+      case 'b': color='blue'; break;
+      case 'q': color='aqua'; break;
+      case 'o': color='orange'; break;
+      case 'v': color='violet'; break;
+      }
+      return 'background-color:'+ color;
+    }
+
+    function memoryWidget() {
+      var a = '<table class="memtable">';
+      var rows = 32;
+      var rowlen = 32;
+      for (i = 0; i<rows; i++) {
+        var addr = addrForRow(i * rowlen);
+        var row = "";
+        for (j = 0; j <rowlen;j++) {
+          var s = state.memory[(i * rowlen) + j];
+          var ch = ((s&&s.length) > 1)? s[1]: '&nbsp;';
+          var style = (s&&s.length > 0)? styler(s[0]): '';
+          row += '<td style="'+style+'" class="box">'+ch+'</td>'
         }
-      
-        console.log('async waiting');
-        if (ajax_in_process) {
-                setTimeout(function() {
-                                Ajax(method, uri, body, fn);
-                        }, 100);
-                return false;
-        }
-     
+        a += "<tr><td class='addr'>"+addr+"</td>"+row+"</tr>";
+      }
+      return a + '</table>';
+    }
 
-        var x = new XMLHttpRequest();
-       
-        if (!x) {
-                return false;
-        }
-        ajax_in_process = true;
-    
-        x.open(method, uri, false);
-    
-        x.setRequestHeader('Accept', 'text/plain');
-        x.setRequestHeader ('Accept', 'text/html');
-        x.onreadystatechange = function() {
-                ajax_in_process = false;
-                if (x.status == 200) {
-                        if (fn) {
-                                fn(x.responseText);
-                        } else {
-                                console.error('missing ajax callback');
-                        }
-                } else {
-                        console.error('ajax ' + x.status);
-                }
-        };
-        x.send(null);
-}
-function on() {
-    document.getElementById("overlay").style.display = "block";
-}
+    function $(x) {
+      return document.getElementById(x);
+    }
 
-function off() {
-    document.getElementById("overlay").style.display = "none";
-}
-function showArchDlg() {
-    document.getElementById("askarchdlg").style.display = "block";
-}
+    function Query(c, cb) {
+      Ajax('GET', '/r2wars/' + encodeURI(c), '', function(x) { if (cb) { cb(x); } });
+    }
+    var ajax_in_process = false;
+    function Ajax(method, uri, body, fn) {
+            if (typeof (XMLHttpRequest) == 'undefined') {
+                    return false;
+            }
 
-function hideArchDlg() {
-    document.getElementById("askarchdlg").style.display = "none";
-}
-function showNoWarriorsDlg() {
-    document.getElementById("nowarriorsdlg").style.display = "block";
-}
-function hideNoWarriorsDlg() {
-        document.getElementById("nowarriorsdlg").style.display = "none";
-}
-display: none;
+            console.log('async waiting');
+            if (ajax_in_process) {
+                    setTimeout(function() {
+                                    Ajax(method, uri, body, fn);
+                            }, 100);
+                    return false;
+            }
+
+
+            var x = new XMLHttpRequest();
+
+            if (!x) {
+                    return false;
+            }
+            ajax_in_process = true;
+
+            x.open(method, uri, false);
+
+            x.setRequestHeader('Accept', 'text/plain');
+            x.setRequestHeader ('Accept', 'text/html');
+            x.onreadystatechange = function() {
+                    ajax_in_process = false;
+                    if (x.status == 200) {
+                            if (fn) {
+                                    fn(x.responseText);
+                            } else {
+                                    console.error('missing ajax callback');
+                            }
+                    } else {
+                            console.error('ajax ' + x.status);
+                    }
+            };
+            x.send(null);
+    }
+    function on() {
+        document.getElementById("overlay").style.display = "block";
+    }
+
+    function off() {
+        document.getElementById("overlay").style.display = "none";
+    }
+    function showArchDlg() {
+        document.getElementById("askarchdlg").style.display = "block";
+    }
+
+    function hideArchDlg() {
+        document.getElementById("askarchdlg").style.display = "none";
+    }
+    function showNoWarriorsDlg() {
+        document.getElementById("nowarriorsdlg").style.display = "block";
+    }
+    function hideNoWarriorsDlg() {
+            document.getElementById("nowarriorsdlg").style.display = "none";
+    }
+    display: none;
 </script>
 
 <style>
-table {
-}
+    table {
+    }
 
-button {
-  width:100%;
-}
+    button {
+        width: 100%;
+    }
 
-.addr {
-  color:white;
-  text-align:center;
-  background-color:black;
-  font-weight: bold;
-  width: 6em;
-}
+    .addr {
+        color: white;
+        text-align: center;
+        background-color: black;
+        font-weight: bold;
+        width: 6em;
+    }
 
-.div1 {
-  position:absolute;
-  top:0px;
-  left:0px;
-  width:30%;
-  height:100%;
-  overflow-x:hidden;
-}
+    .div1 {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 30%;
+        height: 100%;
+        overflow-x: hidden;
+    }
 
-.divM {
-  position:absolute;
-  top:0px;
-  left:30%;
-  right:30%;
-  height:100%;
-  overflow-x:scroll;
-}
+    .divM {
+        position: absolute;
+        top: 0px;
+        left: 30%;
+        right: 30%;
+        height: 100%;
+        overflow-x: scroll;
+    }
 
-.div2 {
-  position:absolute;
-  top:0px;
-  right:0px;
-  width:30%;
-  height:100%;
-  overflow-x:hidden;
-}
+    .div2 {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        width: 30%;
+        height: 100%;
+        overflow-x: hidden;
+    }
 
-.memory {
-  overflow-y: hidden;
-  height:100%;
-  background-color:#303030;
-}
+    .memory {
+        overflow-y: hidden;
+        height: 100%;
+        background-color: #303030;
+    }
 
-.box {
-  width:1em;
-  height:1em;
-  text-align:center;
-  color: white;
-  background-color:#a0a0a0;
-  font-weight: bold;
-}
+    .box {
+        width: 1em;
+        height: 1em;
+        text-align: center;
+        color: white;
+        background-color: #a0a0a0;
+        font-weight: bold;
+    }
 
-.console {
-  height: 20em;
-  background-color:black;
-  color:white;
-  font-family: Courier New;
-  font-weight:bold;
-  white-space: pre;
-  overflow-y: scroll;
-}
-.console1 {
-  height: 200px;
-  background-color:black;
-  width: 100%;
-  color:white;
-  font-family: Courier New;
-  font-weight:bold;
-  white-space: pre;
-  overflow-y: hidden;
-  overflow-x: hidden;
-}
+    .console {
+        height: 20em;
+        background-color: black;
+        color: white;
+        font-family: Courier New;
+        font-weight: bold;
+        white-space: pre;
+        overflow-y: scroll;
+    }
 
-.console2 {
-  height: 100%;
-  background-color:black;
-  color:springgreen;
-  font-family: Courier New;
-  font-weight:bold;
-  width: 100%;
-  white-space: pre;
-  overflow-x: hidden;
-  overflow-y: hidden;
-}
+    .console1 {
+        height: 200px;
+        background-color: black;
+        width: 100%;
+        color: white;
+        font-family: Courier New;
+        font-weight: bold;
+        white-space: pre;
+        overflow-y: hidden;
+        overflow-x: hidden;
+    }
 
-.s {
-  background-color:green;
-  color:black;
-  font-family: Courier New;
-  font-weight:bold;
-  white-space: pre;
-}
-body {
-  background-color:#909090;
-}
+    .console2 {
+        height: 100%;
+        background-color: black;
+        color: springgreen;
+        font-family: Courier New;
+        font-weight: bold;
+        width: 100%;
+        white-space: pre;
+        overflow-x: hidden;
+        overflow-y: hidden;
+    }
 
-td {
-  font-family: Courier New;
-  border: 1px solid #a0a0a0;
-}
-div {
-  font-family: Courier New;
-}
-tr {
-  background-color:#e0e0e0;
-}
-.player1 {
-  background-color:blue;
-  width:100%;
-  color:white;
-  font-weight:bold;
-  font-size:2em;
-  font-family: Consolas, Courier New;
-  overflow-x:hidden;
-  text-align:left;
-  padding-left:2em;
-}
-.player2 {
-  color:white;
-  width:100%;
-  background-color:red;
-  font-weight:bold;
-  font-size:2em;
-  font-family: Consolas, Courier New;
-  overflow-x:hidden;
-  text-align:left;
-  padding-left:0em;
-}
+    .s {
+        background-color: green;
+        color: black;
+        font-family: Courier New;
+        font-weight: bold;
+        white-space: pre;
+    }
 
-.memtable {
-  font-size: 10px;
-  width: 100%;
-}
+    body {
+        background-color: #909090;
+    }
 
-.overlay {
-    display: none;
-    top: 1%;
-    width: 80%;
-    right: 10%;
-    bottom: 10%;
-    background-color:rgba(0, 0, 0, 0.9);
-    z-index: 2;
-    cursor: pointer;
-    position: absolute;
-    border-radius: 6px;
-    border: 3px solid #a0a0a0
-}
+    td {
+        font-family: Courier New;
+        border: 1px solid #a0a0a0;
+    }
 
-.text{
-    position: absolute;
-    top: 4%;
-    left: 50%;
-font-weight: bold;
-    font-size: 40px;
-    color: springgreen;
-    transform: translate(-50%,-50%);
-    -ms-transform: translate(-50%,-50%);
-}
-.text1{
-    position: absolute;
-    font-weight: bold;
-    top: 14%;
-    left: 50%;
-    font-size: 2em;
-    color: white;
-    transform: translate(-50%,0%);
-    -ms-transform: translate(-50%,0%);
-    white-space: pre;
-}
+    div {
+        font-family: Courier New;
+    }
+
+    tr {
+        background-color: #e0e0e0;
+    }
+
+    .player1 {
+        background-color: blue;
+        width: 100%;
+        color: white;
+        font-weight: bold;
+        font-size: 2em;
+        font-family: Consolas, Courier New;
+        overflow-x: hidden;
+        text-align: left;
+        padding-left: 2em;
+    }
+
+    .player2 {
+        color: white;
+        width: 100%;
+        background-color: red;
+        font-weight: bold;
+        font-size: 2em;
+        font-family: Consolas, Courier New;
+        overflow-x: hidden;
+        text-align: left;
+        padding-left: 0em;
+    }
+
+    .memtable {
+        font-size: 10px;
+        width: 100%;
+    }
+
+    .overlay {
+        display: none;
+        top: 1%;
+        width: 80%;
+        right: 10%;
+        bottom: 1%;
+        background-color: rgba(0, 0, 0, 0.9);
+        z-index: 2;
+        cursor: crosshair;
+        position: absolute;
+        border-radius: 6px;
+        border: 3px solid #a0a0a0;
+    }
+
+    .text {
+        position: absolute;
+        top: 4%;
+        left: 50%;
+        font-weight: bold;
+        font-size: 40px;
+        color: springgreen;
+        transform: translate(-50%,-50%);
+        -ms-transform: translate(-50%,-50%);
+    }
+
+    .text1 {
+        position: absolute;
+        font-weight: bold;
+        top: 14%;
+        left: 50%;
+        font-size: 2em;
+        color: white;
+        transform: translate(-50%,0%);
+        -ms-transform: translate(-50%,0%);
+        white-space: pre;
+    }
 
 
 
-.win98{
-  display: none;
-  top: 30%;
-  left: 30%;
-  right: 30%;
-  z-index: 3;
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: none;
-  font-size: 11px;
-  font-family: Tahoma, Verdana;
-  color: #070707;
-  position: absolute;
-  margin: 0 auto;
-  background: #bfbfbf;
-  border: 1px solid;
-  border-top-color: #dfdfdf;
-  border-left-color: #dfdfdf;
-  border-right-color: #808080;
-  border-bottom-color: #808080;
-  box-shadow: 1px 1px 0 0 #000;
-  width: 400px;
-  cursor: default;
-}
-.win98 .content {
-  padding: 7px 10px;
-  font-size: 16px;
-}
-.win98 .header {
-  margin: 2px 2px 0;
-  padding: 1px 2px;
-  color: #fff;
-  background: -webkit-linear-gradient(left, blue, red);
-  background: linear-gradient(to right, blue, red);
-  font-weight: bold;
-  font-size: 16px;
-  line-height: 16px;
-}
+    .win98 {
+        display: none;
+        top: 30%;
+        left: 30%;
+        right: 30%;
+        z-index: 3;
+        -webkit-font-smoothing: none;
+        -moz-osx-font-smoothing: none;
+        font-size: 11px;
+        font-family: Tahoma, Verdana;
+        color: #070707;
+        position: absolute;
+        margin: 0 auto;
+        background: #bfbfbf;
+        border: 1px solid;
+        border-top-color: #dfdfdf;
+        border-left-color: #dfdfdf;
+        border-right-color: #808080;
+        border-bottom-color: #808080;
+        box-shadow: 1px 1px 0 0 #000;
+        width: 400px;
+        cursor: default;
+    }
 
-.legend1 {
-  position:absolute;
-  top: 10px;
-  z-index:2;
-  background-color:#202020;
-  left: 10px;
-  font-weight:bold;
-  text-align:center;
-}
+        .win98 .content {
+            padding: 7px 10px;
+            font-size: 16px;
+        }
 
-.legend2 {
-  position:absolute;
-  top: 10px;
-  z-index:2;
-  background-color:#202020;
-  right:10px;
-  font-weight:bold;
-  text-align:left;
-}
+        .win98 .header {
+            margin: 2px 2px 0;
+            padding: 1px 2px;
+            color: #fff;
+            background: -webkit-linear-gradient(left, blue, red);
+            background: linear-gradient(to right, blue, red);
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 16px;
+        }
 
-.legend {
-  font-weight:bold;
-  text-align:center;
-  width:10px;
-  max-width:10px;
-  height:1em;
-}
+    .legend1 {
+        position: absolute;
+        top: 10px;
+        z-index: 2;
+        background-color: #202020;
+        left: 10px;
+        font-weight: bold;
+        text-align: center;
+    }
 
-.win98 button {
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: none;
-  font-size: 11px;
-  font-family: Tahoma, Verdana;
-  color: #070707;
-  background: #bfbfbf;
-  border: 1px solid;
-  border-top-color: #dfdfdf;
-  border-left-color: #dfdfdf;
-  border-right-color: #808080;
-  border-bottom-color: #808080;
-  box-shadow: 1px 1px 0 0 #000;
-  text-align: center;
-  outline: none;
-  padding: 4px;
-  cursor: default;
-  font-size: 16px;
-}
-.win98 button:enabled {
-  color: #070707;
-}
-.win98 button:disabled {
-  color: #818181;
-  text-shadow: 1px 1px #fff;
-}
-.win98 button:active:enabled {
-  box-shadow: 1px 1px 0 0 #000 inset;
-  border-top-color: #808080;
-  border-left-color: #808080;
-  border-right-color: #dfdfdf;
-  border-bottom-color: #dfdfdf;
-} 
+    .legend2 {
+        position: absolute;
+        top: 10px;
+        z-index: 2;
+        background-color: #202020;
+        right: 10px;
+        font-weight: bold;
+        text-align: left;
+    }
+
+    .legend {
+        font-weight: bold;
+        text-align: center;
+        width: 10px;
+        max-width: 10px;
+        height: 1em;
+    }
+
+    .win98 button {
+        -webkit-font-smoothing: none;
+        -moz-osx-font-smoothing: none;
+        font-size: 11px;
+        font-family: Tahoma, Verdana;
+        color: #070707;
+        background: #bfbfbf;
+        border: 1px solid;
+        border-top-color: #dfdfdf;
+        border-left-color: #dfdfdf;
+        border-right-color: #808080;
+        border-bottom-color: #808080;
+        box-shadow: 1px 1px 0 0 #000;
+        text-align: center;
+        outline: none;
+        padding: 4px;
+        cursor: default;
+        font-size: 16px;
+    }
+
+        .win98 button:enabled {
+            color: #070707;
+        }
+
+        .win98 button:disabled {
+            color: #818181;
+            text-shadow: 1px 1px #fff;
+        }
+
+        .win98 button:active:enabled {
+            box-shadow: 1px 1px 0 0 #000 inset;
+            border-top-color: #808080;
+            border-left-color: #808080;
+            border-right-color: #dfdfdf;
+            border-bottom-color: #dfdfdf;
+        }
 </style>
-<body>
-<div id="overlay" class="overlay" onclick="off()">
-    <div class="text">Score Board</div>
-    <div id="scores" class="text1"></div>
-</div>
+<html>
+    <body>
+        <div id="overlay" class="overlay" onclick="off()">
+            <div class="text">Score Board</div>
+            <div id="scores" class="text1"></div>
+        </div>
+        <div id="askarchdlg" class='win98'>
+            <div class='header'>
+                Multiple warriors detected:
+            </div>
+            <div class='content'>
+                <center>
+                    <h3>What Arch do you want to run?</h3>
+                    <table style="width:100%">
+                        <tr>
+                            <td><button id="arm">ARM 32 bits</button></td>
+                            <td><button id="x86">X86 32 bits</button></td>
+                        </tr>
+                    </table>
+                </center>
+            </div>
+        </div>
+        <div id="nowarriorsdlg" class='win98'>
+            <div class='header'>
+                Warriors not found:
+            </div>
+            <div class='content'>
+                <center>
+                    <h3>Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.</h3>
+                </center>
+            </div>
+        </div>
 
-<div id="askarchdlg" class='win98'>
-    <div class='header'>
-        Multiple warriors detected:
-    </div>
-    <div class='content'>
-        <center>
-            <h3>What Arch do you want to run?</h3>
-            <table style="width:100%">
+        <div class="legend1">
+            <table>
                 <tr>
-                    <td><button id="arm">ARM 32 bits</button></td>
-                    <td><button id="x86">X86 32 bits</button></td>
+                            <td class="legend" style="background-color:aqua">R</td>
+                            <td class="legend" style="background-color:violet">W</td>
                 </tr>
             </table>
-        </center>
-    </div>
-</div>
-<div id="nowarriorsdlg" class='win98'>
-    <div class='header'>
-        Warriors not found:
-    </div>
-    <div class='content'>
-        <center>
-            <h3>Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.</h3>
-        </center>
-    </div>
-</div>
+        </div>
+        <div class="div1" style="overflow-y:hidden">
+            <table style="height:100%;width:100%">
+                <tr>
+                    <td class="player1" id=player1>Player 1</td>
+                </tr>
+                <tr style="height:100%">
+                     <td valign=top style="overflow-x:hidden">
+                        <div class=console1 id=regs1>regs</div>
+                        <div style="border: 1px solid #a0a0a0"></div>
+                        <div class=console2 id=code1>code</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
-<div class="legend1">
-<table>
-<tr>
-            <td class="legend" style="background-color:aqua">R</td>
-            <td class="legend" style="background-color:violet">W</td>
-</tr>
-</table>
-</div>
-<div class="div1">
-    <table style="height:100%;width:100%">
-        <tr>
-            <td class="player1" id=player1>Player 1</td>
-        </tr>
-        <tr style="height:100%">
-             <td valign=top style="overflow-x:hidden">
-                <div class=console1 id=regs1>regs</div>
-                <div style="border: 1px solid #a0a0a0"></div>
-                <div class=console2 id=code1>code</div>
-            </td>
-        </tr>
-    </table>
-</div>
+        <div class="divM" style="overflow-x:hidden">
+            <center>
+                <table style="height:100%;overflow-x:scroll;width:100%">
+                    <tr style="height:100%">
+                        <td valign=top><div class=memory id=memory>memory</div></td>
+                    </tr>
+                    <tr style="height:100%">
+                        <td>
+                            <table style="width:100%">
+                                <tr>
+                                    <td><button id="cmd_load">Load</button></td>
+                                    <td><button id="cmd_run">Run</button></td>
+                                    <td><button id="cmd_stop">Stop</button></td>
+                                    <td><button id="cmd_next">Next</button></td>
+                                    <td><button id="cmd_scores">Scores</button></td>
+                                    <td><button id="lt">&lt;</button></td>
+                                    <td><button id="gt">&gt;</button></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" id="dbg4" value="si">Stop on ini</td>
+                                    <td><input type="checkbox" id="dbg5" value="si">Stop on end</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr style="height:100%">
+                        <td>
+                            <div id="console" class="console">console</div>
+                        </td>
+                    </tr>
+                    <tr style="height:100%">
+                        <td id="status">status</td>
+                    </tr>
+                </table>
+            </center>
+        </div>
 
-<div class="divM">
-<center>
-<div style="width:100%;text-align:center;overflow-x:scroll">
- <table style="height:100%;overflow-x:scroll;width:100%">
- <tr style="height:100%">
-  <td valign=top><div class=memory id=memory>memory</div></td>
- </tr>
- <tr style="height:100%">
-
-<td>
-
-<table style="width:100%">
-    <tr>
-        <td><button id="cmd_load">Load</button></td>
-        <td><button id="cmd_run">Run</button></td>
-        <td><button id="cmd_stop">Stop</button></td>
-        <td><button id="cmd_next">Next</button></td>
-        <td><button id="cmd_scores">Scores</button></td>
-        <td><button id="lt">&lt;</button></td>
-        <td><button id="gt">&gt;</button></td>
-    </tr>
-    <tr>
-        <td><input type="checkbox" id="dbg4" value="si">Stop on ini</td>
-        <td><input type="checkbox" id="dbg5" value="si">Stop on end</td>
-    </tr>
-</tr>
-</table>
-</td>
- </tr>
- <tr style="height:100%">
- <td><div id="console" class="console">console</div></td>
- </tr>
- <tr style="height:100%">
- <td id="status">status</td>
- </tr>
- </table>
-</center>
-</div>
-</div>
-
-<div class="legend2">
-<table>
-<tr>
-            <td class="legend" style="background-color:yellow">R</td>
-            <td class="legend" style="background-color:orange">W</td>
-</tr>
-</table>
-</div>
-
-<div class="div2">
-<div style="width:100%;height:100%;overflow-x:hidden">
-    <table style="height:100%;width:100%">
-         <tr>
-            <td class="player2" id=player2>Player 2</td>
-         </tr>
-         <tr style="height:100%">
-            <td valign=top style="overflow-x:hidden" height="100%" colspan=3>
-                <div class=console1 id=regs2>regs</div>
-                <div style="border: 1px solid #a0a0a0"></div>
-                <div class=console2 id=code2>code</div>
-            </td>
-         </tr>
-    </table>
-</div>
-</body>
+        <div class="legend2">
+            <table>
+                <tr>
+                            <td class="legend" style="background-color:yellow">R</td>
+                            <td class="legend" style="background-color:orange">W</td>
+                </tr>
+            </table>
+        </div>
+        <div class="div2" style="overflow-y:hidden">
+            <table style="height:100%;width:100%">
+                 <tr>
+                    <td class="player2" id=player2>Player 2</td>
+                 </tr>
+                 <tr style="height:100%">
+                    <td valign=top style="overflow-x:hidden" height="100%" colspan=3>
+                        <div class=console1 id=regs2>regs</div>
+                        <div style="border: 1px solid #a0a0a0"></div>
+                        <div class=console2 id=code2>code</div>
+                    </td>
+                 </tr>
+            </table>
+        </div>
+    </body>
 </html>
