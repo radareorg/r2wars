@@ -81,9 +81,11 @@
 
             if (evt.data == "on") {
                 on();
+                socket.send("moreflow");
             }
             else if (evt.data == "off") {
                 off();
+                socket.send("moreflow");
             }
             else if (evt.data == "askarch") {
                 showArchDlg();

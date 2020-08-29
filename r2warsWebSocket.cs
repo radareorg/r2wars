@@ -68,7 +68,6 @@ namespace r2warsTorneo
         private void R2wars_EventPinta(object sender, MyEvent e)
         {
             r2warsStatic.r2w.sync_var = false;
-            //System.Console.WriteLine(e.message);
             Send(e.message);
         }
         protected override void OnError(ErrorEventArgs e)

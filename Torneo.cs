@@ -92,9 +92,26 @@ namespace r2warsTorneo
             fullCombatLog += "Combat Winner: " + ganador + "\\n";
             ncombat++;
             SendDrawEvent(getstats());
-            SendDrawEvent("on");
+            r2warsStatic.r2w.sync_var = false;
+            Console.WriteLine("Showing scoreboard ....");
+            while (r2warsStatic.r2w.sync_var == false)
+            {
+                SendDrawEvent("on");
+                Thread.Sleep(200);
+                //espera(2, 200);
+            }
             espera(3000);
-            SendDrawEvent("off");
+            r2warsStatic.r2w.sync_var = false;
+            while (r2warsStatic.r2w.sync_var == false)
+            {
+                SendDrawEvent("off");
+                Thread.Sleep(200);
+                espera(2, 2);
+            }
+            Console.WriteLine("Hidding scoreboard ....");
+
+            r2warsStatic.r2w.sync_var = false;
+
             if (r2w.bStopAtRoundStart == false)
                 bCombatEnd = true;
             else

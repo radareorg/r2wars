@@ -69,19 +69,25 @@ namespace r2warsTorneo
         }
         public void send_draw_event(string s)
         {
+            // this pause is magic
+            //  Firefox can free memory
+            //  chrome never consume memory and work smooth on drawing
+            Thread.Sleep(5);
             MyEvent e1 = new MyEvent();
             e1.message = s;
             if (Event_draw != null)
             {
                 Event_draw(0, e1);
-                /*Task t = Task.Factory.StartNew(() =>
+                /*
+                Task t = Task.Factory.StartNew(() =>
                 {
                     while (!sync_var)
                     {
                         Thread.Sleep(10);
                     }
                 });
-                t.Wait();*/
+                t.Wait();
+                */
             }
             e1 = null;
         }
@@ -393,8 +399,7 @@ namespace r2warsTorneo
                 drawscreen(Engine.otherplayer);
                 send_draw_event(json_output());
             }
-            //if (bWait)
-                espera(2, 1);
+            // here was have a pause on previous versions now its on send_draw_event
             Engine.switchUserIdx();
         }
         public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2)

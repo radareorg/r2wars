@@ -393,6 +393,7 @@ namespace r2warsTorneo
                 int finrango = 0;
                 int addr = 0;
                 int lastlen = 0;
+                string [] arenas = { "", "" };
                 for (int x = 0; x < this.nPlayers; x++)
                 {
                     file = files[x];
@@ -479,6 +480,7 @@ namespace r2warsTorneo
                     // Añadimos el codigo del jugador
                     string cmd = string.Format("wx {0} @ {1}", src, addr);
                     this.r2[x].RunCommand(cmd);
+                    arenas[x] = cmd;
                     // Configuramos PC
                     cmd = string.Format("aer PC={0}", addr);
                     this.r2[x].RunCommand(cmd);
@@ -502,7 +504,7 @@ namespace r2warsTorneo
                     players[x].actual.pc = "0x" + GetPC(x).ToString("X8");
                     players[x].actual.pcsize = GetPCSize(x);
 
-                    players[x].actual.oldpc =4096;
+                    players[x].actual.oldpc = 4096;
                     players[x].actual.oldpcsize = 0;
                     players[x].actual.mem = GetMemAccessRAW(x);
                     // borramos el log
@@ -516,6 +518,10 @@ namespace r2warsTorneo
                     
 
                 }
+                // sincronizamos las arenas
+                this.r2[1].RunCommand(arenas[0]);
+                this.r2[0].RunCommand(arenas[1]);
+
                 if (players.Count < 2)
                 {
                     return "You need at least 2 users";
@@ -601,8 +607,10 @@ namespace r2warsTorneo
                 // sincronizamos ambas arenas con el codigo de cada warrior
                 cmd = string.Format("wx {0} @ {1}", players[x].code, players[x].orig);
                 this.r2[x].RunCommand(cmd);
-
-
+                if (x==0)
+                    this.r2[1].RunCommand(cmd);
+                if (x==1)
+                    this.r2[0].RunCommand(cmd);
                 // Actualizamos la informacion del Jugador actual
                 int ciclos = GetPCInstructionCycles(x);
                 players[x].actual.cycles = ciclos;
@@ -920,7 +928,7 @@ namespace r2warsTorneo
             string res = this.r2[thisplayer].RunCommand(players[thisplayer].user + ";s PC;pd 1;aea*;aes;aerR;s PC;aoj 1;?en sizeopcode=;?v $l;aer PC;?v 1+theend").Replace("\r", "");
             string[] lines = res.Split('\n');
             string executedins = lines[0];
-            lines[0] = "";
+            //lines[0] = "";
             string[] regs = lines.Where(i => i.StartsWith("aer")).ToArray();
             string[] memaccess = lines.Where(i => i.StartsWith("f")).ToArray();
             string[] json = lines.Where(i => i.StartsWith("[")).ToArray();
@@ -946,8 +954,7 @@ namespace r2warsTorneo
             }
             
             // Generamos la peticion de desensamblado del PC actual del jugador actual
-            long pc = Convert.ToInt64(PC[0].Substring(2), 16);
-            //int pc = Convert.ToInt32(PC[0].Substring(3), 16);
+            long pc = Convert.ToInt64(PC[1].Substring(2), 16);
             long otherpc = players[otherplayer].actual.ipc();
             Dictionary<int, int> dicMemWrite = GetMemAccessWriteDict(mem);
             if (dicMemWrite.Count > 0)
@@ -981,13 +988,13 @@ namespace r2warsTorneo
             // Procesamos el output de radare y obtenemos los 2 desensamblados
             string dasm = this.r2[thisplayer].RunCommand(query).Replace("\r", "");
             string otherdasm = this.r2[otherplayer].RunCommand(otherquery).Replace("\r", "");
-            int x1 = dasm.IndexOf(PC[0]);
+            int x1 = dasm.IndexOf(PC[1]);
             string newins = dasm.Substring(x1, dasm.IndexOf('\n', x1) - x1);
             // esto es para debug y poder comprobar si los cambios de pancake funcionan pudes borrarlo en acabar
             if (executedins.Contains("invalid") || executedins.Contains("unaligned") || pc<0 || pc>1024)
                 players[thisplayer].actual.dead = true;
 
-            if ((PC[1] != "" && PC[1] != "0x1") || executedins.Contains("invalid") || executedins.Contains("unaligned") ||  pc < 0 || pc > 1024)
+            if ((PC[2] != "" && PC[2] != "0x1") || executedins.Contains("invalid") || executedins.Contains("unaligned") ||  pc < 0 || pc > 1024)
                 players[thisplayer].actual.dead = true;
             else
                 players[thisplayer].actual.dead = false;
@@ -1005,7 +1012,7 @@ namespace r2warsTorneo
             players[thisplayer].actual.oldpcsize = players[thisplayer].actual.pcsize;
 
             // Actualizamos la instruccion actual
-            players[thisplayer].actual.pc = PC[0];
+            players[thisplayer].actual.pc = PC[1];
             players[thisplayer].actual.pcsize = ipcsize;
 
             players[thisplayer].actual.ins = newins;
