@@ -188,6 +188,8 @@ namespace r2warsTorneo
         public int cycles = 0;
         public int cyclesfixed = 0;
         public bool dead = false;
+        public string deadinfo = "";
+        public string deadins = "";
 
         public clsinfo(string pc, string ins, string dasm, string regs, string mem, int cycles, string txtmemoria)
         {
@@ -202,6 +204,8 @@ namespace r2warsTorneo
             this.cycles = cycles;
             this.cyclesfixed = cycles;
             this.txtmemoria = txtmemoria;
+            this.deadinfo = "";
+            this.deadins = "";
         }
         public long ipc()
         {
@@ -350,30 +354,6 @@ namespace r2warsTorneo
             p.WaitForExit();
             return output;
         }
-        /*List<int> get_random_offsets(int nRandoms)
-        {
-            System.Random rnd = new System.Random();
-            List<int> rand = new List<int>();
-            int addr = rnd.Next(0, memsize - maxprogsize);
-            if (addr % 4 != 0)
-                addr -= addr % 4;
-            rand.Add(addr);
-            int ini = addr;
-            int fin = addr + maxprogsize;
-            while (true)
-            {
-                addr = rnd.Next(0, memsize - maxprogsize);
-                if (addr % 4 != 0)
-                    addr -= addr % 4;
-                if ((addr < ini && addr + maxprogsize < ini) || (addr > fin))
-                {
-                    rand.Add(addr);
-                    break;
-                }
-            }
-            return rand;
-        }*/
-        
 
         public string Init(string[] files, string[] usernames)
         {
@@ -381,104 +361,120 @@ namespace r2warsTorneo
             Console.WriteLine("r2path =  " + r2paths.r2);
             if (File.Exists(r2paths.r2) || !OperatingSystem.IsWindows())
             {
-                //List<int> offsets = null;4
-                string file = "";
-                string strname = "";
                 string cone = string.Format("-w malloc://{0}", memsize);
                 // inicializamos las 2 instancias de r2, si ya estan inicializadas restauramos el estado inicial
                 nPlayers = files.Count();
-                //offsets = get_random_offsets(this.nPlayers);
-                /////
-                Random rnd = new Random(Environment.TickCount & Int32.MaxValue);
-                int finrango = 0;
                 int addr = 0;
-                int lastlen = 0;
+                int anotherAddr = 512;
                 string [] arenas = { "", "" };
+                string[] newsrc = { "", "" };
+                string[] newrasm2params = { "", "" };
+                string[] newfile = { "", "" };
+                string[] newr2params = { "", "" };
+                r2archs.eArch[] newarch = { r2archs.eArch.unknow, r2archs.eArch.unknow };
+                Console.WriteLine("==== LOADING WARRIOR ====");
                 for (int x = 0; x < this.nPlayers; x++)
                 {
-                    file = files[x];
-                    //int addr = offsets[x];
-                    r2archs.eArch arch = r2archs.archfromfileext(file);
-                    string r2params = r2archs.r2param(arch);
-                    string rasm2params = r2archs.rasm2param(arch);
+
+                    newfile[x] = files[x];
+                    newarch [x] = r2archs.archfromfileext(newfile[x]);
+                    newr2params[x] = r2archs.r2param(newarch[x]);
+                    newrasm2params[x] = r2archs.rasm2param(newarch[x]);
+                    Console.WriteLine(" rasm params = {0} {1}", newrasm2params[x], newfile[x]);
+                    newsrc[x] = RunAndGetOutput(r2paths.rasm2, string.Format("{0} -f {1}", newrasm2params[x], newfile[x])).Replace("\r", "").Replace("\n", "");
+                    Console.WriteLine(" Rasm Output = {0}", newsrc[x]);
+                    Console.WriteLine(" Rasm size   = {0}", newsrc[x].Length / 2);
+                    Console.WriteLine("=========================");
+                    if (newsrc[x] == "")
+                    {
+                        return "Invalid source";
+                    }
+                    if (newsrc[x].Length / 2>512)
+                        return "Invalid source bot >512 bytes";
+
+                }
+                // calculamos un valor aleatorio para determinar la posicion del primer jugador 0=arriba, 1=abajo
+                Random rnd = new Random(Environment.TickCount & Int32.MaxValue);
+                int pos = rnd.Next(0, 2);
+                Console.WriteLine("Initial position Player 0 {0}={1}", pos, pos == 0 ? "arriba" : "abajo");
+                for (int x = 0; x < this.nPlayers; x++)
+                {
                     if (this.r2[x] == null)
                     {
                         this.r2[x] = new R2Pipe(cone, r2paths.r2);
                     }
                 
                     // seleccionamos la arch
-                    this.r2[x].RunCommand(r2params);
-                    //this.r2[x].RunCommand("e cfg.sandbox=true");
-                    //  this.r2[x].RunCommand("e asm.bytes=0");
+                    this.r2[x].RunCommand(newr2params[x]);
                     this.r2[x].RunCommand("e scr.color=false");
                     this.r2[x].RunCommand("e asm.lines=false");
                     this.r2[x].RunCommand("e asm.flags=false");
                     this.r2[x].RunCommand("e asm.comments=false");
+                    this.r2[x].RunCommand("e asm.bytes=false");
                     this.r2[x].RunCommand("e cfg.r2wars=true");
 
                     this.r2[x].RunCommand("pd");
                     // guardamos el estado inicial de esil para esta arch
-                    if (initstate[(int)arch] == "")
+                    if (initstate[(int)newarch[x]] == "")
                     {
                         this.r2[x].RunCommand("aei");
                         this.r2[x].RunCommand("aeim");
-                        initstate[(int)arch] = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
+                        initstate[(int)newarch[x]] = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
                     }
                     // si ya tenemos estado guardado restauramos los registros
                     else
                     {
-                        this.r2[x].RunCommand(initstate[(int)arch]);
+                        this.r2[x].RunCommand(initstate[(int)newarch[x]]);
                         this.r2[x].RunCommand("aei");
                         this.r2[x].RunCommand("aeim");
                     }
                     // reseteamos la memoria
                     this.r2[x].RunCommand(string.Format("w0 {0} @ 0", memsize));
-                    
-                    // compilamos el programa del usuario
-                    string src = RunAndGetOutput(r2paths.rasm2, string.Format("{0} -f {1}", rasm2params, file)).Replace("\r", "").Replace("\n", "");
-                    if (src == "")
-                    {
-                        return "Invalid source";
-                    }
-                    int lenSource = (src.Length / 2);
-                    Console.WriteLine("==== LOADING WARRIOR ====");
-                    Console.WriteLine(" rasm params = {0} {1}", rasm2params, file);
-                    Console.WriteLine(" Rasm Output = {0}", src);
-                    Console.WriteLine(" Rasm size   = {0}", lenSource);
-                    Console.WriteLine("=========================");
-
                     // calculamos donde poner el codigo en la arena
-                    List<Range<int>> intRanges = new List<Range<int>>();
-                    if (finrango == 0)
+                    if (pos==0)
                     {
-                        finrango = 1024 - lenSource;
-                        intRanges.Add(new Range<int>(0, finrango));
-                        addr = rnd.NextFromRanges(intRanges);
-                        if (addr % 4 != 0)
-                            addr -= addr % 4;
-                        lastlen = lenSource;
+                        pos = 1;
+                        // jugador entre 0 y 512;
+                        while (true)
+                        {
+                            if (newsrc[x].Length == 1024)
+                            {
+                                anotherAddr = 0;
+                                addr = 0;
+                                break;
+                            }
+
+                            addr = rnd.Next(0, anotherAddr - newsrc[x].Length / 2);
+                            if (addr % 4 == 0)
+                            {
+                                anotherAddr = addr + newsrc[x].Length / 2;
+                                break;
+                            }
+                        }
                     }
                     else
                     {
-                        int inicioProgramaAnterior = addr;
-                        int finProgramaAnterior = addr + lastlen;
-                        while (true)
+                        pos = 0;
+                        //jugador jugador entre 512  y 1024
+                       while(true)
                         {
-                            finrango = 1024 - lenSource;
-                            intRanges.Add(new Range<int>(0, finrango));
-                            addr = rnd.NextFromRanges(intRanges);
-                            if (addr % 4 != 0)
-                                addr -= addr % 4;
-                            if ((addr + lenSource < 1024))
-                                if (addr + lenSource < inicioProgramaAnterior ||  addr > finProgramaAnterior)
-                                    break;
-
-
+                            if (newsrc[x].Length == 1024)
+                            {
+                                anotherAddr = 512;
+                                addr = 512;
+                                break;
+                            }
+                            addr = rnd.Next(anotherAddr, 1024 - newsrc[x].Length / 2);
+                            if (addr % 4 == 0)
+                            {
+                                anotherAddr = addr;
+                                break;
+                            }
                         }
                     }
-
+                    Console.WriteLine("Player {0} position {1}-{2} ({3})", x, addr, addr + newsrc[x].Length / 2, newsrc[x].Length / 2);
                     // Añadimos el codigo del jugador
-                    string cmd = string.Format("wx {0} @ {1}", src, addr);
+                    string cmd = string.Format("wx {0} @ {1}", newsrc[x], addr);
                     this.r2[x].RunCommand(cmd);
                     arenas[x] = cmd;
                     // Configuramos PC
@@ -490,10 +486,8 @@ namespace r2warsTorneo
                     // Obtenemos los registros para esta partida/jugador
                     string initRegs = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
 
-                    // generamos el jugador
-                    strname = usernames[x];
                     // Iniciamos el jugador añadiendo sus datos de programa
-                    player p = new player(strname, addr, src.Length / 2, src, initRegs);
+                    player p = new player(usernames[x], addr, newsrc[x].Length / 2, newsrc[x], initRegs);
                     // lo añadimos a la lista de jugadores
                     players.Add(p);
                     int ciclos = GetPCInstructionCycles(x);
@@ -510,14 +504,15 @@ namespace r2warsTorneo
                     // borramos el log
                     p.log.Clear();
                     this.r2[x].RunCommand("e cmd.esil.todo=f theend=1");
-                    this.r2[x].RunCommand("e cmd.esil.trap=f theend=1");
-                    this.r2[x].RunCommand("e cmd.esil.intr=f theend=1");
-                    this.r2[x].RunCommand("e cmd.esil.ioer=f theend=1");
+                    this.r2[x].RunCommand("e cmd.esil.trap=f theend=2");
+                    this.r2[x].RunCommand("e cmd.esil.intr=f theend=3");
+                    this.r2[x].RunCommand("e cmd.esil.ioer=f theend=4");
                     this.r2[x].RunCommand("f theend=0");
                     this.r2[x].RunCommand(string.Format("b {0}", memsize));
                     
 
                 }
+                Console.WriteLine("");
                 // sincronizamos las arenas
                 this.r2[1].RunCommand(arenas[0]);
                 this.r2[0].RunCommand(arenas[1]);
@@ -535,47 +530,56 @@ namespace r2warsTorneo
         {
             //List<int> offsets = get_random_offsets(this.nPlayers);
             string cmd = "";
-            Random rnd = new Random(Environment.TickCount & Int32.MaxValue);
-            int finrango = 0;
             int addr = 0;
-            int lastlen = 0;
+            int anotherAddr = 512;
+            Random rnd = new Random(Environment.TickCount & Int32.MaxValue);
+            int pos = rnd.Next(0, 2);
+            Console.WriteLine("Initial position Player 0 {0}={1}", pos,pos == 0 ? "arriba" : "abajo");
             for (int x = 0; x < this.nPlayers; x++)
             {
                 if (bNew)
                 {
-
-                    // calculamos donde poner el codigo en la arena
-                    List<Range<int>> intRanges = new List<Range<int>>();
-                    if (finrango == 0)
+                    if (pos == 0)
                     {
-                        finrango = 1024 - players[x].size;
-                        intRanges.Add(new Range<int>(0, finrango));
-                        addr = rnd.NextFromRanges(intRanges);
-                        if (addr % 4 != 0)
-                            addr -= addr % 4;
-                        lastlen = players[x].size;
+                        pos = 1;
+                        // jugador entre 0 y 512;
+                        while (true)
+                        {
+                            if (players[x].code.Length == 1024)
+                            {
+                                anotherAddr = 0;
+                                addr = 0;
+                                break;
+                            }
+                            addr = rnd.Next(0, anotherAddr - players[x].code.Length / 2);
+                            if (addr % 4 == 0)
+                            {
+                                anotherAddr = addr + players[x].code.Length / 2;
+                                break;
+                            }
+                        }
                     }
                     else
                     {
-                        int inicioProgramaAnterior = addr;
-                        int finProgramaAnterior = addr + lastlen;
+                        pos = 0;
+                        //jugador jugador entre 512  y 1024
                         while (true)
                         {
-                            finrango = 1024 - players[x].size;
-                            intRanges.Add(new Range<int>(0, finrango));
-                            addr = rnd.NextFromRanges(intRanges);
-                            if (addr % 4 != 0)
-                                addr -= addr % 4;
-                            if ((addr + players[x].size < 1024))
-                                if (addr + players[x].size < inicioProgramaAnterior || addr > finProgramaAnterior)
-                                    break;
-
-
+                            if (players[x].code.Length == 1024)
+                            {
+                                anotherAddr = 512;
+                                addr = 512;
+                                break;
+                            }
+                            addr = rnd.Next(anotherAddr, 1024 - players[x].code.Length / 2);
+                            if (addr % 4 == 0)
+                            {
+                                anotherAddr = addr;
+                                break;
+                            }
                         }
                     }
-
-
-
+                    Console.WriteLine("Player {0} position {1}-{2} ({3})",x, addr, addr + players[x].code.Length / 2, players[x].code.Length / 2);
                     // restauramos el estado inicial de ESIL para este jugador/arch
                     this.r2[x].RunCommand(players[x].userini);
                     // Configuramos PC
@@ -584,12 +588,8 @@ namespace r2warsTorneo
                     // Configuramos STACK
                     cmd = string.Format("aer SP=SP+{0}", addr);
                     this.r2[x].RunCommand(cmd);
-        
-
-
                     // ponemos la nueva direccion
                     players[x].orig = addr;
-
                     // obtenemos los registros 
                     string initRegs = this.r2[x].RunCommand("aerR").Replace("\r", "").Replace("\n", ";");
                     //// actualizamos los registros iniciales del usuario
@@ -628,13 +628,14 @@ namespace r2warsTorneo
                 // borramos el log
                 players[x].log.Clear();
                 this.r2[x].RunCommand("e cmd.esil.todo=f theend=1");
-                this.r2[x].RunCommand("e cmd.esil.trap=f theend=1");
-                this.r2[x].RunCommand("e cmd.esil.intr=f theend=1");
-                this.r2[x].RunCommand("e cmd.esil.ioer=f theend=1");
+                this.r2[x].RunCommand("e cmd.esil.trap=f theend=2");
+                this.r2[x].RunCommand("e cmd.esil.intr=f theend=3");
+                this.r2[x].RunCommand("e cmd.esil.ioer=f theend=4");
                 this.r2[x].RunCommand("f theend=0");
 
             
             }
+            Console.WriteLine();
             return true;
         }
        
@@ -955,6 +956,7 @@ namespace r2warsTorneo
             
             // Generamos la peticion de desensamblado del PC actual del jugador actual
             long pc = Convert.ToInt64(PC[1].Substring(2), 16);
+            long pcactual = Convert.ToInt64(PC[0].Substring(2,8), 16);
             long otherpc = players[otherplayer].actual.ipc();
             Dictionary<int, int> dicMemWrite = GetMemAccessWriteDict(mem);
             if (dicMemWrite.Count > 0)
@@ -988,16 +990,47 @@ namespace r2warsTorneo
             // Procesamos el output de radare y obtenemos los 2 desensamblados
             string dasm = this.r2[thisplayer].RunCommand(query).Replace("\r", "");
             string otherdasm = this.r2[otherplayer].RunCommand(otherquery).Replace("\r", "");
-            int x1 = dasm.IndexOf(PC[1]);
+            int x1 = dasm.IndexOf(PC[1] + " ");
             string newins = dasm.Substring(x1, dasm.IndexOf('\n', x1) - x1);
-            // esto es para debug y poder comprobar si los cambios de pancake funcionan pudes borrarlo en acabar
-            if (executedins.Contains("invalid") || executedins.Contains("unaligned") || pc<0 || pc>1024)
-                players[thisplayer].actual.dead = true;
-
-            if ((PC[2] != "" && PC[2] != "0x1") || executedins.Contains("invalid") || executedins.Contains("unaligned") ||  pc < 0 || pc > 1024)
+            if ((PC[2] != "" && PC[2] != "0x1") || executedins.Contains("invalid") || executedins.Contains("unaligned") || pcactual < 0 || pcactual > 1024)
                 players[thisplayer].actual.dead = true;
             else
                 players[thisplayer].actual.dead = false;
+            // detectamos la razon de la muerta
+            if (players[thisplayer].actual.dead == true)
+            {
+                string razon = "";
+                if (executedins.Contains("unaligned"))
+                    razon = "Executed unaligned instruction";
+                if (executedins.Contains("invalid"))
+                    razon = "Executed invalid instruction";
+                if (pcactual < 0 || pcactual > 1024)
+                {
+                    if (executedins.Contains("unaligned"))
+                        razon = "Executed unaligned instruction out of ARENA";
+                    else if (executedins.Contains("invalid"))
+                        razon = "Executed invalid instruction out of ARENA";
+                    else
+                        razon = "Instruction executed out of the ARENA";
+                }
+                if (PC[2] == "0x5")
+                    razon = "Instruction Read/Write out of ARENA.";
+                if (PC[2] == "0x4")
+                    razon = "Syscall/Int Instruction executed.";
+                if (razon == "")
+                {
+                        Console.WriteLine("dead by ESIL: " + PC[2] + " Ins = " + executedins + " PC = 0x{0:X} \nregs:\n" + regs1, pcactual);
+                        //5=escritura fuera de rango
+                        //4= syscall/int
+                        //3= esil trap
+                        //2= esis todo
+                }
+                else
+                    Console.WriteLine(players[thisplayer].name +" Lost reason: " + razon +" " +executedins);
+                players[thisplayer].actual.deadinfo = razon;
+                players[thisplayer].actual.deadins = executedins;
+
+            }
             // refrescamos el dasm del otro jugador por si fue cambiado por la ejecucion del jugador actual
             players[otherplayer].actual.dasm = otherdasm;
 

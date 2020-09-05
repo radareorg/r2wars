@@ -25,6 +25,7 @@ namespace r2warsTorneo
         string[] actualcombatwarriors = { "", "" };
         string fullCombatLog ="";
         string actualCombatLog = "";
+        string actualDeadReason = "";
         string warriorsDirectory = "warriors";
         bool bTournamenTask = false;
         public bool bCombatEnd = true;
@@ -58,8 +59,19 @@ namespace r2warsTorneo
         private void RoundEnd(object sender, MyEvent e)
         {
             int nround = e.round + 1;
-            fullCombatLog   += "    Round-" + nround.ToString() + " " + e.winnername + " Wins Cycles:" + e.ciclos.ToString() + "\\n";
-            actualCombatLog += "    Round-" + nround.ToString() + " " + e.winnername + " Wins Cycles:" + e.ciclos.ToString() + "\\n"; 
+            fullCombatLog += "    Round-" + nround.ToString() + " " + e.winnername + " Wins Cycles:" + e.ciclos.ToString() + "\\n";
+            fullCombatLog += "     Dead Reason     : " + e.loserreason + "\\n";
+            fullCombatLog += "     Dead Instruction: " + e.loserins + "\\n";
+
+            actualCombatLog += "    Round-" + nround.ToString() + " " + e.winnername + " Wins Cycles:" + e.ciclos.ToString() + "\\n";
+            actualCombatLog += "     Dead Reason     : " + e.loserreason  + "\\n";
+            actualCombatLog += "     Dead Instruction: " + e.loserins + "\\n";
+
+            actualDeadReason += " Round-" + nround.ToString() + " Winner: " + e.winnername + "\\n";
+            actualDeadReason += "  Looser     : " + e.losername + "\\n";
+            actualDeadReason += "  Dead Reason: " + e.loserreason + "\\n";
+            actualDeadReason += "  Dead Ins   : " + e.loserins + "\\n\\n";
+
             if (actualcombatscore[e.ganador].Score!=null)
                 actualcombatscore[e.ganador].Score+= new HighestPointsScore(1);
             string s = "{\"console\":\"" + actualCombatLog + "\"}";
@@ -70,17 +82,28 @@ namespace r2warsTorneo
             int nround = e.round + 1;
             actualCombatLog += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() +"\\n";
             fullCombatLog   += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + "\\n";
+            actualDeadReason+= "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + "\\n";
             string s = "{\"console\":\"" + actualCombatLog + "\"}";
             SendDrawEvent(s);
         }
         string getstats()
         {
-            string stats = string.Format("Combat {0} / {1}", ncombat, allcombats.Count) + "\\n\\n";
+            string stats = string.Format("Combat {0} / {1}", ncombat, allcombats.Count) + "\\n";
             var standings = generator.GenerateRankings();
+            int n = 0;
+            string salida = "";
             foreach (var standing in standings)
             {
-                string salida = string.Format("{0} {1} {2}", standing.Rank.ToString(), teamNames[standing.Team.TeamId], standing.ScoreDescription);
+                if (n == 0)
+                    salida = "<font style='color:yellow'>";
+                else
+                    salida = "";
+                salida += string.Format("{0} {1} {2}", standing.Rank.ToString(), teamNames[standing.Team.TeamId], standing.ScoreDescription);
+                if (n == 2)
+                    salida += "</font>";
+
                 stats += salida + "\\n";
+                n++;
             }
             return "{\"scores\":\"" + stats + "\",\"console\":\"" + actualCombatLog + "\"}";
         }
@@ -92,26 +115,32 @@ namespace r2warsTorneo
             fullCombatLog += "Combat Winner: " + ganador + "\\n";
             ncombat++;
             SendDrawEvent(getstats());
+            actualDeadReason += "Winner: " + ganador + "\\n";
+            string s = "{\"infodead\":\"" + actualDeadReason + "\"}";
+            SendDrawEvent(s);
+
             r2warsStatic.r2w.sync_var = false;
-            Console.WriteLine("Showing scoreboard ....");
+
+
+            Console.WriteLine("Showing Summary ....");
             while (r2warsStatic.r2w.sync_var == false)
             {
                 SendDrawEvent("on");
-                Thread.Sleep(200);
-                //espera(2, 200);
+                //Thread.Sleep(200);
+                espera(200);
             }
-            espera(3000);
+            //espera(3000);
+            espera(6000);
+
             r2warsStatic.r2w.sync_var = false;
             while (r2warsStatic.r2w.sync_var == false)
             {
                 SendDrawEvent("off");
-                Thread.Sleep(200);
-                espera(2, 2);
+                //Thread.Sleep(200);
+                espera(200);
             }
-            Console.WriteLine("Hidding scoreboard ....");
-
+            Console.WriteLine("Hidding Summary ....");
             r2warsStatic.r2w.sync_var = false;
-
             if (r2w.bStopAtRoundStart == false)
                 bCombatEnd = true;
             else
@@ -132,6 +161,7 @@ namespace r2warsTorneo
                 }
                 string tmp = string.Format("Combat initialized {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
                 actualCombatLog = tmp + "\\n";
+                actualDeadReason = string.Format("{0} vs {1}\\n\\n", actualcombatnames[0], actualcombatnames[1]);
                 fullCombatLog += tmp + "\\n";
                 bCombatEnd = false;
                 string s = "{\"console\":\"" + actualCombatLog + "\"}";
@@ -142,9 +172,41 @@ namespace r2warsTorneo
             {
                 fullCombatLog += "Tournament end " + DateTime.Now + "\\n";
                 bTournamentRun = false;
-                string s = "{\"console\":\"" + fullCombatLog + "\"}";
-                SendDrawEvent(s);
-                SendDrawEvent("on");
+                string j = getstats().Replace("scores", "infodead").Replace("}", "");
+                string s = ",\"console\":\"" + fullCombatLog + "\"}";
+                j += s;
+                // al ser el final del torneo imprimimos en el resumen la clasificacion final 
+                SendDrawEvent(j);
+                r2warsStatic.r2w.sync_var = false;
+                Console.WriteLine("Showing Final Result.");
+                while (r2warsStatic.r2w.sync_var == false)
+                {
+                    SendDrawEvent("on");
+                    espera(200);
+                    //Thread.Sleep(200);
+                }
+
+                // generamos el fichero de info
+                string filename = "";
+                filename = string.Format("{0}.r2wars.txt", DateTime.Now.ToString().Replace("/","-").Replace(":","-"));
+                using (StreamWriter sw = File.CreateText(filename))
+                {
+                    sw.WriteLine("RANKING");
+                    sw.WriteLine("==============");
+                    string stats = string.Format("Combat {0} / {1}", ncombat, allcombats.Count) + Environment.NewLine+ Environment.NewLine;
+                    var standings = generator.GenerateRankings();
+                    foreach (var standing in standings)
+                    {
+                        string salida = string.Format("{0} {1} {2}", standing.Rank.ToString(), teamNames[standing.Team.TeamId], standing.ScoreDescription);
+                        stats += salida + Environment.NewLine;
+                    }
+                    sw.Write(stats);
+                    sw.WriteLine("");
+                    sw.WriteLine("FULL LOG");
+                    sw.WriteLine("==============");
+                    sw.Write(fullCombatLog.Replace("\\n", Environment.NewLine));
+                }
+
             }
         }
         public void StopTournament()

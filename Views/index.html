@@ -1,6 +1,7 @@
 ﻿<script>
     var clicked = false;
     var clicked1 = false;
+    var otroscore = "";
     document.addEventListener('DOMContentLoaded', function () {
       $('cmd_scores').addEventListener('click', () => {
           on();
@@ -147,8 +148,12 @@
         $('player1').innerHTML = state.player1.name;
       if (state && state.player2 && state.player2.name)
         $('player2').innerHTML = state.player2.name;
-      if (state && state.scores)
-        $('scores').innerHTML = state.scores;
+      if (state && state.scores) {
+          otroscore = state.scores;
+      }
+      if (state && state.infodead) {
+          $('scores').innerHTML = state.infodead;
+      }
 
     }
 
@@ -237,8 +242,15 @@
             };
             x.send(null);
     }
+    function showscorewindow() {
+        var win = window.open("", "Title", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes");
+        //win.document.body.innerHTML = '<style> div {font-family: Courier New;} .overlay {top: 0%;right:0%;left:0%;bottom: 0%;background-color: rgba(0, 0, 0, 0.9);z-index: 2;cursor: crosshair;position: absolute;border-radius: 0px;border: 1px solid #a0a0a0;}.text1 {position: absolute;font-weight: bold;top: 7%;left: 50%;font-size: 1.7em;color: white;transform: translate(-50%,0%);-ms-transform: translate(-50%,0%);white-space: pre;}.text {position: absolute;top: 4%;left: 50%;font-weight: bold;font-size: 30px;color: springgreen;transform: translate(-50%,-50%);-ms-transform: translate(-50%,-50%);}</style>' + '<div id="overlay" class="overlay" onclick="off()"><div class="text">Score Board</div><div id="scores" class="text1">' + otroscore + '</div></div>';
+        win.document.body.innerHTML = '<style> div {font-family: Courier New;} .overlay {top: 0%;right:0%;left:0%;bottom: 0%;background-color: rgba(0, 0, 0, 0.9);z-index: 2;cursor: crosshair;position: absolute;border-radius: 0px;border: 1px solid #a0a0a0;}.text1 {position: absolute;font-weight: bold;top: 7%;left: 50%;font-size: 2.7em;color: white;transform: translate(-50%,0%);-ms-transform: translate(-50%,0%);white-space: pre;}.text {position: absolute;top: 4%;left: 50%;font-weight: bold;font-size: 56px;color: springgreen;transform: translate(-50%,-50%);-ms-transform: translate(-50%,-50%);}</style>' + '<div id="overlay" class="overlay" onclick="off()"><div class="text">Score Board</div><div id="scores" class="text1">' + otroscore + '</div></div>';
+
+    }
     function on() {
         document.getElementById("overlay").style.display = "block";
+        showscorewindow();
     }
 
     function off() {
@@ -260,6 +272,481 @@
     display: none;
 </script>
 
+<style>
+    button {
+        min-width: 10px;
+    }
+
+    table {
+    }
+
+    button {
+        width: 100%;
+    }
+
+    .addr {
+        color: white;
+        text-align: center;
+        background-color: black;
+        font-weight: bold;
+        width: 6em;
+    }
+
+    .div1 {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 30%;
+        height: 100%;
+        overflow-x: hidden;
+    }
+
+    .divM3 {
+        position: fixed;
+        bottom: 0px;
+        background-color: #e0e0e0;
+        left: 30%;
+        right: 30%;
+        width: 40%;
+        height: 16em;
+        overflow: hidden;
+    }
+
+    .divM2 {
+        position: fixed;
+        bottom: 14em;
+        background-color: #e0e0e0;
+        left: 30%;
+        right: 30%;
+        width: 40%;
+        height: 100px;
+        overflow: hidden;
+    }
+
+    .divM {
+        position: absolute;
+        top: 0px;
+        left: 30%;
+        right: 30%;
+        height: 100%;
+        width: 40%;
+        overflow-x: scroll;
+    }
+
+    .div2 {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        width: 30%;
+        height: 100%;
+        overflow-x: hidden;
+    }
+
+    .memory {
+        overflow-y: hidden;
+        height: 100%;
+        background-color: #303030;
+    }
+
+    .box {
+        width: 1em;
+        height: 1em;
+        text-align: center;
+        color: white;
+        background-color: #a0a0a0;
+        font-weight: bold;
+    }
+
+    .console {
+        height: 16em;
+        background-color: black;
+        color: white;
+        font-family: Courier New;
+        font-size: 14px;
+        font-weight: bold;
+        white-space: pre;
+        overflow-y: scroll;
+        overflow-x: scroll;
+    }
+
+    .console1 {
+        height: 238px;
+        background-color: black;
+        width: 100%;
+        color: white;
+        font-family: Courier New;
+        font-size: 15px;
+        font-weight: bold;
+        white-space: pre;
+        overflow-y: hidden;
+        overflow-x: hidden;
+    }
+
+    .console2 {
+        height: 100%;
+        background-color: black;
+        color: springgreen;
+        font-family: Courier New;
+        font-size: 13px;
+        font-weight: bold;
+        width: 100%;
+        white-space: pre;
+        overflow-x: hidden;
+        overflow-y: hidden;
+    }
+
+    .s {
+        background-color: green;
+        color: black;
+        font-family: Courier New;
+        font-weight: bold;
+        white-space: pre;
+    }
+
+    body {
+        overflow: hidden;
+        background-color: #909090;
+    }
+
+    td {
+        font-family: Courier New;
+        border: 1px solid #a0a0a0;
+        color: black;
+    }
+
+    button {
+        min-width: 1px;
+        background-color: inherit;
+    }
+
+    div {
+        font-family: Courier New;
+    }
+
+    tr {
+        background-color: #e0e0e0;
+    }
+
+    .player1 {
+        background-color: blue;
+        width: 100%;
+        color: white;
+        font-weight: bold;
+        font-size: 2em;
+        font-family: Consolas, Courier New;
+        overflow-x: hidden;
+        text-align: left;
+        padding-left: 2em;
+    }
+
+    .player2 {
+        color: white;
+        width: 100%;
+        background-color: red;
+        font-weight: bold;
+        font-size: 2em;
+        font-family: Consolas, Courier New;
+        overflow-x: hidden;
+        text-align: left;
+        padding-left: 0em;
+    }
+
+    .memtable {
+        font-size: 10px;
+        width: 100%;
+    }
+
+    .overlay {
+        display: none;
+        top: 1%;
+        width: 90%;
+        right: 5%;
+        bottom: 1%;
+        background-color: rgba(0, 0, 0, 0.9);
+        z-index: 2;
+        cursor: crosshair;
+        position: absolute;
+        border-radius: 6px;
+        border: 3px solid #a0a0a0;
+    }
+
+    .text {
+        position: absolute;
+        top: 4%;
+        left: 50%;
+        font-weight: bold;
+        font-size: 40px;
+        color: springgreen;
+        transform: translate(-50%,-50%);
+        -ms-transform: translate(-50%,-50%);
+    }
+
+    .text1 {
+        position: absolute;
+        font-weight: bold;
+        top: 14%;
+        left: 50%;
+        font-size: 1.4em;
+        color: white;
+        transform: translate(-50%,0%);
+        -ms-transform: translate(-50%,0%);
+        white-space: pre;
+    }
+
+
+
+    .win98 {
+        display: none;
+        top: 30%;
+        left: 30%;
+        right: 30%;
+        z-index: 3;
+        -webkit-font-smoothing: none;
+        -moz-osx-font-smoothing: none;
+        font-size: 11px;
+        font-family: Tahoma, Verdana;
+        color: #070707;
+        position: absolute;
+        margin: 0 auto;
+        background: #bfbfbf;
+        border: 1px solid;
+        border-top-color: #dfdfdf;
+        border-left-color: #dfdfdf;
+        border-right-color: #808080;
+        border-bottom-color: #808080;
+        box-shadow: 1px 1px 0 0 #000;
+        width: 400px;
+        cursor: default;
+    }
+
+        .win98 .content {
+            padding: 7px 10px;
+            font-size: 16px;
+        }
+
+        .win98 .header {
+            margin: 2px 2px 0;
+            padding: 1px 2px;
+            color: #fff;
+            background: -webkit-linear-gradient(left, blue, red);
+            background: linear-gradient(to right, blue, red);
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 16px;
+        }
+
+    .legend1 {
+        position: absolute;
+        top: 10px;
+        z-index: 2;
+        background-color: black;
+        left: 10px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .legend2 {
+        position: absolute;
+        top: 10px;
+        z-index: 2;
+        background-color: black;
+        right: 10px;
+        font-weight: bold;
+        text-align: left;
+    }
+
+    .legend {
+        font-weight: bold;
+        text-align: center;
+        width: 10px;
+        max-width: 10px;
+        height: 1em;
+    }
+
+    .win98 button {
+        -webkit-font-smoothing: none;
+        -moz-osx-font-smoothing: none;
+        font-size: 11px;
+        font-family: Tahoma, Verdana;
+        color: #070707;
+        background: #bfbfbf;
+        border: 1px solid;
+        border-top-color: #dfdfdf;
+        border-left-color: #dfdfdf;
+        border-right-color: #808080;
+        border-bottom-color: #808080;
+        box-shadow: 1px 1px 0 0 #000;
+        text-align: center;
+        outline: none;
+        padding: 4px;
+        cursor: default;
+        font-size: 16px;
+    }
+
+        .win98 button:enabled {
+            color: #070707;
+        }
+
+        .win98 button:disabled {
+            color: #818181;
+            text-shadow: 1px 1px #fff;
+        }
+
+        .win98 button:active:enabled {
+            box-shadow: 1px 1px 0 0 #000 inset;
+            border-top-color: #808080;
+            border-left-color: #808080;
+            border-right-color: #dfdfdf;
+            border-bottom-color: #dfdfdf;
+        }
+</style>
+
+<html>
+<body>
+    <div id="overlay" class="overlay" onclick="off()">
+        <div class="text">Summary</div>
+        <div id="scores" class="text1"></div>
+    </div>
+    <div id="askarchdlg" class="win98">
+        <div class="header">
+            Multiple warriors detected:
+        </div>
+        <div class="content">
+            <center>
+                <h3>What Arch do you want to run?</h3>
+                <table style="width:100%">
+                    <tbody>
+                        <tr>
+                            <td><button id="arm">ARM 32 bits</button></td>
+                            <td><button id="x86">X86 32 bits</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </center>
+        </div>
+    </div>
+    <div id="nowarriorsdlg" class="win98">
+        <div class="header">
+            Warriors not found:
+        </div>
+        <div class="content">
+            <center>
+                <h3>Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.</h3>
+            </center>
+        </div>
+    </div>
+    <div class="legend1">
+        <table>
+            <tbody>
+                <tr>
+                    <td class="legend" style="background-color:aqua">R</td>
+                    <td class="legend" style="background-color:violet">W</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="div1" style="overflow-y:hidden;">
+        <table style="height:100%;width:100%">
+            <tbody>
+                <tr>
+                    <td class="player1" id="player1">Player1</td>
+                </tr>
+                <tr style="height:100%">
+                    <td valign="top" style="overflow-x:hidden;overflow-y:hidden">
+                        <div class="console1" id="regs1"></div>
+                        <div style="border: 1px solid #a0a0a0"></div>
+                        <div class="console2" id="code1"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="divM" style="overflow-x:hidden">
+        <center class="">
+            <table style="height:100%;overflow-x:scroll;width:100%">
+                <tbody>
+                    <tr style="height:100%">
+                        <td valign="top"><div class="memory" id="memory"></div></td>
+                    </tr>
+                </tbody>
+            </table>
+        </center>
+    </div>
+    <div class="divM2">
+        <table style="width:100%">
+            <tr style="visibility:visible;width:100%">
+                <td>
+                    <table style="min-width:10px;width:100%">
+                        <tr>
+                            <td><button id="cmd_load">Load</button></td>
+                            <td><button id="cmd_run">Run</button></td>
+                            <td><button id="cmd_stop">Stop</button></td>
+                            <td><button id="cmd_next">Next</button></td>
+                            <td><button id="cmd_scores">Scores</button></td>
+                            <td><button id="lt">&lt;</button></td>
+                            <td><button id="gt">&gt;</button></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="display:flex">
+                    <input type="checkbox" id="dbg4" value="si">StopOnIni
+                    <input type="checkbox" id="dbg5" value="si">StopOnEnd
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="divM3">
+        <center class="">
+            <table style="width:100%">
+                <tbody>
+                    <tr style="height:100%">
+                        <td style="height:100%">
+                            <div id="console" class="console"></div>
+                        </td>
+                    </tr>
+                    <tr style="height:100%">
+                        <td id="status">Idle</td>
+                    </tr>
+                </tbody>
+            </table>
+        </center>
+    </div>
+    <div class="legend2">
+        <table>
+            <tbody>
+                <tr>
+                    <td class="legend" style="background-color:yellow">R</td>
+                    <td class="legend" style="background-color:orange">W</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="div2" style="overflow-y:hidden">
+        <table style="height:100%;width:100%">
+            <tbody>
+                <tr>
+                    <td class="player2" id="player2">Player2</td>
+                </tr>
+                <tr style="height:100%">
+                    <td valign="top" style="overflow-x:hidden;overflow-y:hidden" height="100%" colspan="3">
+                        <div class="console1" id="regs2"></div>
+                        <div style="border: 1px solid #a0a0a0"></div>
+                        <div class="console2" id="code2"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+
+
+
+
+<!--
 <style>
     table {
     }
@@ -320,12 +807,14 @@
 
     .console {
         height: 20em;
+        width: 42.1em;
         background-color: black;
         color: white;
         font-family: Courier New;
         font-weight: bold;
         white-space: pre;
         overflow-y: scroll;
+        overflow-x: scroll;
     }
 
     .console1 {
@@ -436,7 +925,7 @@
         font-weight: bold;
         top: 14%;
         left: 50%;
-        font-size: 2em;
+        font-size: 1.4em;
         color: white;
         transform: translate(-50%,0%);
         -ms-transform: translate(-50%,0%);
@@ -553,7 +1042,7 @@
 <html>
     <body>
         <div id="overlay" class="overlay" onclick="off()">
-            <div class="text">Score Board</div>
+            <div class="text">Combat Summary</div>
             <div id="scores" class="text1"></div>
         </div>
         <div id="askarchdlg" class='win98'>
@@ -667,3 +1156,5 @@
         </div>
     </body>
 </html>
+-->
+

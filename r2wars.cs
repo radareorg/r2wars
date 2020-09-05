@@ -326,6 +326,12 @@ namespace r2warsTorneo
                 e2.round = nRound;
                 e2.ciclos = totalciclos;
                 e2.winnername = Engine.players[Engine.thisplayer].name;
+
+                e2.loserins = Engine.players[Engine.otherplayer].actual.deadins;
+                e2.loserreason = Engine.players[Engine.otherplayer].actual.deadinfo;
+                e2.losername = Engine.players[Engine.otherplayer].name;
+
+
                 Event_roundEnd(this, e2);
             }
           
@@ -338,15 +344,22 @@ namespace r2warsTorneo
                 MyEvent e1 = new MyEvent();
                 e1.message = "";
                 if (victorias[0] > victorias[1])
-
+                {
                     e1.ganador = 0;
+                    e1.perdedor = 1;
+                }
                 else
+                {
                     e1.ganador = 1;
+                    e1.perdedor = 0;
+                }
 
                 e1.round = nRound;
                 e1.ciclos = totalciclos;
                 if (!empate)
+                {
                     e1.winnername = Engine.players[e1.ganador].name;
+                }
                 else
                     e1.winnername = "Draw";
                 this.Event_combatEnd(this, e1);
@@ -374,7 +387,7 @@ namespace r2warsTorneo
                 //update(1);
                 if (bDead)
                 {
-
+                    Console.WriteLine("dead");
                 }
                 else
                 {
@@ -470,6 +483,7 @@ namespace r2warsTorneo
                             bInCombat = false;
                             bThreadIni = false;
                             bStopProcess = false;
+                            RoundExhausted();
                             CombatEnd(true);
                             nExausted = 0;
                             return;
@@ -554,6 +568,7 @@ namespace r2warsTorneo
                                 bInCombat = false;
                                 bThreadIni = false;
                                 bStopProcess = false;
+                                RoundExhausted();
                                 CombatEnd(true);
                                 nExausted = 0;
                                 Debug.WriteLine("gameLoopTask: Fin(draw)");
