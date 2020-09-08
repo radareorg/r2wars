@@ -1,6 +1,6 @@
 # r2wars
 
-![Alt text](/resources/r2wars_logo_transparent.png?raw=true "r2wars Logo")
+![Alt text](csharp/resources/r2wars_logo_transparent.png?raw=true "r2wars Logo")
 
 The C# implementation of the r2wars tournament competition
 
