@@ -14,6 +14,7 @@ pub const (
 
 pub struct Bot {
 	name string
+	file string
 	arch string
 	bits int
 	size int
@@ -88,7 +89,10 @@ fn rasm2(file, flags string) ?string {
 }
 
 pub fn new_bot(file string) ?Bot {
-	bot_name := file // improve
+	i := file.last_index('/') or {
+		return error('Invalid path')
+	}
+	bot_name := file[(i+1)..].replace('.asm', '')
 	bot_code := os.read_file(file) or {
 		return error('Cannot open file')
 	}
@@ -101,6 +105,7 @@ pub fn new_bot(file string) ?Bot {
 	}
 	bot := Bot{
 		name: bot_name
+		file: file
 		arch: arch
 		bits: bits
 		wins: 0
@@ -197,6 +202,7 @@ fn setup(mut bot Bot, pc int, sp int) {
 	bot.r2.cmd('e hex.compact=true')
 	bot.r2.cmd('e hex.cols=32')
 	bot.r2.cmd('e scr.color=2')
+	bot.r2.cmd('wx ${bot.data} @ pc')
 	bot.r2.cmd('ar PC=$pc')
 	bot.r2.cmd('ar SP=$sp')
 	bot.dead = false
@@ -212,10 +218,8 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 	}
 
 	mut bot := if rand.intn(2) == 1 { bot0 } else { bot1 }
-	bot.r2.cmd('wx ${bot0.data} @ $pos0')
-	bot.r2.cmd('wx ${bot1.data} @ $pos1')
 
-	sp := arenasize-4
+	sp := arenasize / 2
 	setup(mut bot0, pos0, sp)
 	setup(mut bot1, pos1, sp)
 	if war.verbose {
@@ -263,12 +267,17 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 		} else {
 			// bot.regs = bot.r2.cmd('ar*')
 			// bot.r2.cmd(bot.regs)
-			cc := bot.r2.cmd('ao@r:PC~cycles[1]').trim_right('\r\n')
+			mut cc := bot.r2.cmd('ao@r:PC~cycles[1]').trim_right('\r\n')
 			if '$cc' == '' {
 				bot.dead = true
 			}
-			if cc.int() == 0 {
+			tt := bot.r2.cmd('ao@r:PC~^type[1]').trim_right('\r\n')
+			if tt == 'ill' {
 				bot.dead = true
+			}
+			if cc.int() == 0 {
+				// eprintln ('This arch doesnt does cycles properly')
+				cc = '1' // bot.dead = true
 			}
 			if war.verbose {
 				term.set_cursor_position(0,y)
