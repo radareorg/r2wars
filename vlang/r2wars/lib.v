@@ -6,9 +6,10 @@ import time
 import rand
 import radare.r2pipe
 
-const (
+pub const (
 	arenasize = 512
-	maxcycles = 500
+	maxcycles = 200
+	version = '0.1.0'
 )
 
 pub struct Bot {
@@ -26,6 +27,8 @@ mut:
 	dead bool
 	wins int
 	lost int
+	steps int
+	index int
 }
 
 pub struct BattleResult {
@@ -36,8 +39,9 @@ pub struct BattleResult {
 }
 
 pub struct War {
-mut:
+pub mut:
 	bots []Bot
+	verbose bool
 	// r := r2pipe.new()
 }
 
@@ -115,11 +119,11 @@ pub fn new() &War {
 }
 
 fn (mut war War)fight_vs(mut bot0, bot1 Bot) ?BattleResult {
-	bot0.r2 = r2pipe.spawn('malloc://$arenasize', 'r2 -q0 -a ${bot0.arch} -b ${bot0.bits}') or {
+	bot0.r2 = r2pipe.spawn('malloc://$arenasize', 'r2 -w -n -NN -q0 -a ${bot0.arch} -b ${bot0.bits}') or {
 		panic(err)
 	}
 
-	bot1.r2 = r2pipe.spawn('malloc://$arenasize', 'r2 -a ${bot1.arch} -b ${bot1.bits} -q0') or {
+	bot1.r2 = r2pipe.spawn('malloc://$arenasize', 'r2 -w -n -NN -q0 -a ${bot1.arch} -b ${bot1.bits}') or {
 		panic(err)
 	}
 	// eprintln(bot0.r2.cmd('pd 10'))
@@ -138,40 +142,36 @@ pub fn (mut war War)fight() ? {
 	}
 
 	items := war.bots.len
-	for i in 0 .. items {
-		for j in 0 .. items {
-			if i != j {
-				mut bot := war.bots[i]
-				mut but := war.bots[j]
+	for bot in war.bots {
+		for but in war.bots {
+			if bot.index != but.index {
 				for _ in 0 .. 3 {
 					res := war.fight_vs(bot, but) or {
 						panic(err)
-					}
-					if !res.timeout {
-						if res.winner.name == bot.name {
-							war.bots[i].wins++
-							war.bots[j].lost++
-						}
-						if res.winner.name == but.name {
-							war.bots[i].wins++
-							war.bots[j].lost++
-						}
 					}
 				}
 			}
 		}
 	}
 
+	println('wins\tlost\twi/lo\tsteps\tname')
 	for bot in war.bots {
-		println('${bot.wins} / ${bot.lost} - ${bot.name} ')
+		lost := if bot.lost > 0 { bot.lost } else { 1 }
+		p := f64(bot.wins) / lost
+		println('${bot.wins}\t${bot.lost}\t$p\t${bot.steps}\t- ${bot.name} ')
 	}
 
 }
 
-fn randposes(bot0, bot1 &Bot) (int, int) {
+fn randposes(bot0, bot1 &Bot) ?(int, int) {
 	mut pos0 := 0
 	mut pos1 := 0
+	mut tries := 10
 	for true {
+		tries--
+		if tries == 0 {
+			return error('cannot fit')
+		}
 		pos0 = rand.intn(arenasize-bot0.size)
 		pos1 = rand.intn(arenasize-bot1.size)
 		pos0 -= pos0 % 4
@@ -192,6 +192,8 @@ fn randposes(bot0, bot1 &Bot) (int, int) {
 
 fn setup(mut bot Bot, pc int, sp int) {
 	bot.r2.cmd('e asm.bytes=true')
+	bot.r2.cmd('e asm.flags=false')
+	bot.r2.cmd('e cfg.r2wars=true')
 	bot.r2.cmd('e hex.compact=true')
 	bot.r2.cmd('e hex.cols=32')
 	bot.r2.cmd('e scr.color=2')
@@ -202,8 +204,13 @@ fn setup(mut bot Bot, pc int, sp int) {
 }
 
 pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
-	pos0, pos1 := randposes(bot0, bot1)
-	print('Positions: $pos0, $pos1')
+	pos0, pos1 := randposes(bot0, bot1) or {
+		return error(err)
+	}
+	if war.verbose {
+		eprintln('Positions: $pos0, $pos1')
+	}
+
 	mut bot := if rand.intn(2) == 1 { bot0 } else { bot1 }
 	bot.r2.cmd('wx ${bot0.data} @ $pos0')
 	bot.r2.cmd('wx ${bot1.data} @ $pos1')
@@ -211,7 +218,9 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 	sp := arenasize-4
 	setup(mut bot0, pos0, sp)
 	setup(mut bot1, pos1, sp)
-	term.clear()
+	if war.verbose {
+		term.clear()
+	}
 	mut cycles := 0
 	for true {
 		cycles++
@@ -222,12 +231,14 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 			time.sleep(1)
 			break
 		}
-		y := if bot == bot0 { 0 } else { 15 }
+		y := if bot == bot0 { 0 } else { 13 }
 		have_cycles := bot.cycles > 0
 		mut data := ''
 		if have_cycles {
-			term.set_cursor_position(0,y)
-			println('[$cycles] cc=${bot.cycles} wins=${bot.wins} lost=${bot.lost} ${bot.name}')
+			if war.verbose {
+				term.set_cursor_position(0,y)
+				println('[$cycles] cc=${bot.cycles} wins=${bot.wins} lost=${bot.lost} steps=${bot.steps} ${bot.name}')
+			}
 			bot.cycles--
 			if bot.cycles == 0 {
 /*
@@ -236,6 +247,8 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 				}
 */
 				bot.r2.cmd('aes')
+				war.bots[bot.index].steps++
+				bot.steps++
 				bot.r2.cmd('.ar*')
 				pc := bot.r2.cmd('ar PC').int()
 
@@ -257,25 +270,39 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 			if cc.int() == 0 {
 				bot.dead = true
 			}
-			term.set_cursor_position(0,y)
-			println('$bot.cycles')
-			term.set_cursor_position(0,y + 2)
-			r := bot.r2.cmd('pd 1@r:PC')
-			s := bot.r2.cmd('ar=@e:hex.cols=16')
-			println('$r\n$s')
+			if war.verbose {
+				term.set_cursor_position(0,y)
+				println('$bot.cycles')
+				term.set_cursor_position(0,y + 2)
+				r := bot.r2.cmd('pd 1@r:PC')
+				s := bot.r2.cmd('ar=@e:hex.cols=16')
+				println('$r\n$s')
+			}
 			bot.cycles = cc.int()
 			// read memory
 		}
-		term.set_cursor_position(0,32)
-		println(bot.r2.cmd('pxa $arenasize @ 0'))
+		if war.verbose {
+			term.set_cursor_position(0,26)
+			println('${bot.name}')
+			println(bot.r2.cmd('pxa $arenasize @ 0'))
+		}
 
 		if bot.dead {
-			mut r := bot.r2.cmd('pd 1@r:PC')
-			eprintln('IS DEAAAD ${bot.name}\n$r')
+			war.bots[bot.index].lost++
+			if war.verbose {
+				r := bot.r2.cmd('pd 1@r:PC')
+				eprintln('IS DEAAAD ${bot.name}\n$r')
+			}
 			mut winner := if bot == bot0 { bot1 } else { bot0 }
-			r = winner.r2.cmd('pd 1@r:PC')
-			eprintln('WINNER IS ${winner.name} ${winner.wins}/${winner.lost}\n$r')
-			time.sleep(1)
+			war.bots[winner.index].wins++
+			if war.verbose {
+				r := winner.r2.cmd('pd 1@r:PC')
+				eprintln('WINNER IS ${winner.name} ${winner.wins}/${winner.lost}\n$r')
+				time.sleep(1)
+			} else {
+				eprintln('WIN ${winner.name}')
+				eprintln('LOS ${bot.name}')
+			}
 			break
 		}
 		bot = if bot == bot0 { bot1 } else { bot0 }
@@ -298,9 +325,10 @@ pub fn (mut war War)load_bots(dir string) ? {
 	}
 	for file in files {
 		eprintln('- $file')
-		bot := new_bot('$dir/$file') or {
+		mut bot := new_bot('$dir/$file') or {
 			return error(err)
 		}
+		bot.index = war.bots.len
 		war.bots << bot
 	}
 }
