@@ -1,0 +1,22 @@
+# Anisse Astier
+.arch arm
+.bits 32
+.hex 0c008fe2
+.hex fe7fb0e8
+.hex 020ca0e3
+.hex fe7f80e8
+.hex 81ffa0e3
+.hex 3f0e00e2
+.hex fe7fa0e8
+.hex fe7fa0e8
+.hex fe7fa0e8
+.hex fe7fa0e8
+.hex fe7fa0e8
+.hex fe7fa0e8
+.hex fe7fa0e8
+.hex fe7fa0e8
+.hex fe7fa0e8
+.hex 0600a0e8
+.hex f3ffffea
+.hex cccccccc
+.hex cccccccc
