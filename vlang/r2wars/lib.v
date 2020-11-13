@@ -80,7 +80,7 @@ fn rasm2_flags(file string) ?(string, int) {
 	return error('unkwnown arch. $file')
 }
 
-fn rasm2(file, flags string) ?string {
+fn rasm2(file string, flags string) ?string {
 	line := 'rasm2 $flags -f $file'
 	r := os.exec(line) or {
 		return err
@@ -123,7 +123,7 @@ pub fn new() &War {
 	return &War{}
 }
 
-fn (mut war War)fight_vs(mut bot0, bot1 Bot) ?BattleResult {
+fn (mut war War)fight_vs(mut bot0 Bot, mut bot1 Bot) ?BattleResult {
 	bot0.r2 = r2pipe.spawn('malloc://$arenasize', 'r2 -w -n -NN -q0 -a ${bot0.arch} -b ${bot0.bits}') or {
 		panic(err)
 	}
@@ -133,7 +133,7 @@ fn (mut war War)fight_vs(mut bot0, bot1 Bot) ?BattleResult {
 	}
 	// eprintln(bot0.r2.cmd('pd 10'))
 
-	res := war.battle(bot0, bot1) or {
+	res := war.battle(mut bot0, mut bot1) or {
 		panic(err)
 	}
 	bot0.r2.free()
@@ -146,14 +146,14 @@ pub fn (mut war War)fight() ? {
 		return error('not enough bots')
 	}
 
-	items := war.bots.len
-	for bot in war.bots {
-		for but in war.bots {
+	for mut bot in war.bots {
+		for mut but in war.bots {
 			if bot.index != but.index {
 				for _ in 0 .. 3 {
-					res := war.fight_vs(bot, but) or {
+					res := war.fight_vs(mut bot, mut but) or {
 						panic(err)
 					}
+					eprintln('$res')
 				}
 			}
 		}
@@ -168,7 +168,7 @@ pub fn (mut war War)fight() ? {
 
 }
 
-fn randposes(bot0, bot1 &Bot) ?(int, int) {
+fn randposes(mut bot0 Bot, mut bot1 Bot) ?(int, int) {
 	mut pos0 := 0
 	mut pos1 := 0
 	mut tries := 10
@@ -209,8 +209,8 @@ fn setup(mut bot Bot, pc int, sp int) {
 	bot.regs = bot.r2.cmd('ar*')
 }
 
-pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
-	pos0, pos1 := randposes(bot0, bot1) or {
+pub fn (mut war War)battle(mut bot0 Bot, mut bot1 Bot) ?BattleResult {
+	pos0, pos1 := randposes(mut bot0, mut bot1) or {
 		return error(err)
 	}
 	if war.verbose {
@@ -240,7 +240,7 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 		mut data := ''
 		if have_cycles {
 			if war.verbose {
-				term.set_cursor_position(0,y)
+				term.set_cursor_position({x:0,y:y})
 				println('[$cycles] cc=${bot.cycles} wins=${bot.wins} lost=${bot.lost} steps=${bot.steps} ${bot.name}')
 			}
 			bot.cycles--
@@ -254,10 +254,9 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 				war.bots[bot.index].steps++
 				bot.steps++
 				bot.r2.cmd('.ar*')
-				pc := bot.r2.cmd('ar PC').int()
-
+				// pc := bot.r2.cmd('ar PC').int()
 				pcmap := bot.r2.cmd('om.@r:PC')
-// eprintln('PCMAAP(${pcmap.len},$pcmap,${pcmap[0]})')
+				// eprintln('PCMAAP(${pcmap.len},$pcmap,${pcmap[0]})')
 				if pcmap == '' {
 					bot.dead = true
 				}
@@ -280,9 +279,9 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 				cc = '1' // bot.dead = true
 			}
 			if war.verbose {
-				term.set_cursor_position(0,y)
+				term.set_cursor_position({x:0,y:y})
 				println('$bot.cycles')
-				term.set_cursor_position(0,y + 2)
+				term.set_cursor_position({x:0,y:y + 2})
 				r := bot.r2.cmd('pd 1@r:PC')
 				s := bot.r2.cmd('ar=@e:hex.cols=16')
 				println('$r\n$s')
@@ -291,7 +290,7 @@ pub fn (mut war War)battle(mut bot0, bot1 Bot) ?BattleResult {
 			// read memory
 		}
 		if war.verbose {
-			term.set_cursor_position(0,26)
+			term.set_cursor_position({x:0,y:26})
 			println('${bot.name}')
 			println(bot.r2.cmd('pxa $arenasize @ 0'))
 		}
