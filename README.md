@@ -16,7 +16,11 @@ This game was initially developed by pancake as a PoC in here
 
 * https://github.com/radare/radare2-extras/tree/master/r2wars
 
-You can find an explanation of the game in the first competition
+You can refer to the r2wars For N00bs talk from r2con2020 for more information:
+
+* https://www.youtube.com/watch?v=PB0AFBqFwGQ
+
+Furthermore, you can find an explanation of the game in the first competition
 that happened during the 2nd r2con in 2017.
 
 * https://www.youtube.com/watch?v=sB-i5yUatx4
