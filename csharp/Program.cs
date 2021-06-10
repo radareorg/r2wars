@@ -14,8 +14,8 @@ namespace r2warsTorneo
     {
         static void Main(string[] args)
         {
-            string httpUrl = "http://127.0.0.1:9664";
-            string websocketUrl = "ws://127.0.0.1:9966";
+            string httpUrl = "http://0.0.0.0:9664";
+            string websocketUrl = "ws://0.0.0.0:9966";
             var tokenSource = new CancellationTokenSource();
             CancellationToken ct = tokenSource.Token;
             if (args.Length > 0) {
@@ -24,7 +24,7 @@ namespace r2warsTorneo
 
             var taskA = new Task(() =>
             {
-                var nancyHost = new Nancy.Hosting.Self.NancyHost(new Uri(httpUrl), new CustomBootstrapper());
+                var nancyHost = new Nancy.Hosting.Self.NancyHost(new Uri("http://0.0.0.0:9664"), new CustomBootstrapper());
                 nancyHost.Start();
                 Console.WriteLine("Web server running at " + httpUrl);
 

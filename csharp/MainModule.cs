@@ -5,7 +5,7 @@ namespace r2warsTorneo
 	{
 		public MainModule()
 		{
-            Get["/"] = x => View["index.html"];
+	            Get["/"] = x => View["index.html"];
 		}
 	}
     /*public class r2warsModule : NancyModule
