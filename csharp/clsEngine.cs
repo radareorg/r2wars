@@ -978,15 +978,15 @@ namespace r2warsTorneo
             string query = "";
             string otherquery = "";
 
-            if (pc < players[thisplayer].orig || pc >= players[thisplayer].orig + players[thisplayer].size)
+            //if (pc < players[thisplayer].orig || pc >= players[thisplayer].orig + players[thisplayer].size)
                 query = string.Format("s PC; pd 8");
-            else
-                query = string.Format("pD {0} @ {1}", players[thisplayer].size, players[thisplayer].orig);
+            //else
+              //  query = string.Format("pD {0} @ {1}", players[thisplayer].size, players[thisplayer].orig);
 
-            if (otherpc < players[otherplayer].orig || otherpc >= players[otherplayer].orig + players[otherplayer].size)
+            //if (otherpc < players[otherplayer].orig || otherpc >= players[otherplayer].orig + players[otherplayer].size)
                 otherquery = string.Format("s {0}; pd 8", players[otherplayer].actual.pc);
-            else
-                otherquery = string.Format("pD {0} @ {1}", players[otherplayer].size, players[otherplayer].orig);
+            //else
+              //  otherquery = string.Format("pD {0} @ {1}", players[otherplayer].size, players[otherplayer].orig);
             // Procesamos el output de radare y obtenemos los 2 desensamblados
             string dasm = this.r2[thisplayer].RunCommand(query).Replace("\r", "");
             string otherdasm = this.r2[otherplayer].RunCommand(otherquery).Replace("\r", "");
