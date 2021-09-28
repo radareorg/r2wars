@@ -123,6 +123,7 @@ namespace r2warsTorneo
         }
 
     }
+
     public static class r2paths
     {
         static string _r2path="";
@@ -131,7 +132,6 @@ namespace r2warsTorneo
         {
             get
             {
-
                 if (_r2path == "")
                 {
                     string ruta = "";
@@ -142,18 +142,17 @@ namespace r2warsTorneo
                     return ruta;
                 }
                 return _r2path;
-
             }
             set
             {
                 _r2path = value;
             }
         }
+
         public static string rasm2
         {
             get
             {
-
                 if (_rasm2path == "")
                 {
                     string ruta = "";
@@ -165,7 +164,6 @@ namespace r2warsTorneo
                 }
                 else
                     return _rasm2path;
-
             }
             set
             {
@@ -979,12 +977,12 @@ namespace r2warsTorneo
             string otherquery = "";
 
             //if (pc < players[thisplayer].orig || pc >= players[thisplayer].orig + players[thisplayer].size)
-                query = string.Format("s PC; pd 8");
+                query = string.Format("pd 8 @r:PC");
             //else
               //  query = string.Format("pD {0} @ {1}", players[thisplayer].size, players[thisplayer].orig);
 
             //if (otherpc < players[otherplayer].orig || otherpc >= players[otherplayer].orig + players[otherplayer].size)
-                otherquery = string.Format("s {0}; pd 8", players[otherplayer].actual.pc);
+                otherquery = string.Format("pd 8 @ {0}", players[otherplayer].actual.pc);
             //else
               //  otherquery = string.Format("pD {0} @ {1}", players[otherplayer].size, players[otherplayer].orig);
             // Procesamos el output de radare y obtenemos los 2 desensamblados
@@ -992,7 +990,7 @@ namespace r2warsTorneo
             string otherdasm = this.r2[otherplayer].RunCommand(otherquery).Replace("\r", "");
             int x1 = dasm.IndexOf(PC[1] + " ");
             string newins = dasm.Substring(x1, dasm.IndexOf('\n', x1) - x1);
-            if ((PC[2] != "" && PC[2] != "0x1") || executedins.Contains("invalid") || executedins.Contains("unaligned") || pcactual < 0 || pcactual > 1024)
+            if ((PC[2] != "" && PC[2] != "1" && PC[2] != "0x1") || executedins.Contains("invalid") || executedins.Contains("unaligned") || pcactual < 0 || pcactual > 1024)
                 players[thisplayer].actual.dead = true;
             else
                 players[thisplayer].actual.dead = false;
