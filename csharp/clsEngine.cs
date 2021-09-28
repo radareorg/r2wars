@@ -41,7 +41,7 @@ namespace r2warsTorneo
             if (_arch == eArch.i8051)
                 return "8051 8 bits";
 
-            if (_arch == eArch.riscv)
+            if (_arch == eArch.riscv32)
                 return "RISCV 32 bits";
             if (_arch == eArch.riscv64)
                 return "RISCV 64 bits";
