@@ -708,7 +708,7 @@ namespace r2warsTorneo
         }
         public int GetPCSize()
         {
-            string tmp = this.r2[this.uidx].RunCommand("s PC;?v $l");
+            string tmp = this.r2[this.uidx].RunCommand("?v $l@r:PC");
             string tmp1 = tmp.Substring(2).Replace("\r", "").Replace("\n", "");
             int res = Convert.ToInt32(tmp1, 16);
             return res;
@@ -721,7 +721,7 @@ namespace r2warsTorneo
         public string GetPCInstruction()
         {
             string a = this.r2[this.uidx].RunCommand("o");
-            string b = this.r2[this.uidx].RunCommand("s PC;pd 1").Replace("\r", "");
+            string b = this.r2[this.uidx].RunCommand("pd 1@r:PC").Replace("\r", "");
             return b.Replace("\n","");
         }
         public string GetPCInstruction(int nuser)
@@ -738,7 +738,7 @@ namespace r2warsTorneo
         public int GetPCInstructionCycles()
         {
             int result = 0;
-            string json = this.r2[this.uidx].RunCommand("s PC; aoj 1").Replace("\r", "");
+            string json = this.r2[this.uidx].RunCommand("aoj 1@r:PC").Replace("\r", "");
             int ini = json.IndexOf("cycles");
             if (ini > 0)
             {
@@ -759,7 +759,7 @@ namespace r2warsTorneo
         }
         public string GetPCProgram()
         {
-            string query = string.Format("s PC; pd 8");
+            string query = string.Format("pd 8@r:PC");
             string tmp = this.r2[this.uidx].RunCommand(query);
             return tmp.Replace("\r", "");
         }
@@ -781,7 +781,7 @@ namespace r2warsTorneo
         }
         public string GetMemAccessRAW()
         {
-            return this.r2[this.uidx].RunCommand("s PC;aea*").Replace("\r", "");
+            return this.r2[this.uidx].RunCommand("aea*@r:PC").Replace("\r", "");
         }
         public string GetMemAccessRAW(int nuser)
         {
