@@ -18,6 +18,8 @@ namespace r2warsTorneo
             x86,
             x64,
             i8051,
+            riscv32,
+            riscv64,
             unknow
         }
         public static string archName(eArch _arch)
@@ -39,6 +41,11 @@ namespace r2warsTorneo
             if (_arch == eArch.i8051)
                 return "8051 8 bits";
 
+            if (_arch == eArch.riscv32)
+                return "RISCV 32 bits";
+            if (_arch == eArch.riscv64)
+                return "RISCV 64 bits";
+
             if (_arch == eArch.x86)
                 return "x86 32 bits";
             if (_arch == eArch.x64)
@@ -58,12 +65,17 @@ namespace r2warsTorneo
             if (ext.Contains(".mips-32."))
                 return eArch.mips32;
             if (ext.Contains(".mips-64."))
-                return eArch.mips32;
+                return eArch.mips64;
 
             if (ext.Contains(".x86-32."))
                 return eArch.x86;
             if (ext.Contains(".x86-64."))
                 return eArch.x64;
+
+            if (ext.Contains(".riscv-32."))
+                return eArch.riscv32;
+            if (ext.Contains(".riscv-64."))
+                return eArch.riscv64;
 
             if (ext.Contains(".gb."))
                 return eArch.gb;
@@ -90,6 +102,11 @@ namespace r2warsTorneo
             if (_arch == eArch.i8051)
                 return "-a 8051";
 
+            if (_arch == eArch.riscv32)
+                return "-a riscv -b 32";
+            if (_arch == eArch.riscv64)
+                return "-a riscv -b 64";
+
             if (_arch == eArch.x86)
                 return "-a x86 -b 32";
             if (_arch == eArch.x64)
@@ -114,6 +131,11 @@ namespace r2warsTorneo
                 return "e asm.arch=gb;e asm.bits=16";
             if (_arch == eArch.i8051)
                 return "e asm.arch=8051;e asm.cpu=8051-shared-code-xdata";
+
+            if (_arch == eArch.riscv32)
+                return "e asm.arch=riscv;e asm.bits=32";
+            if (_arch == eArch.riscv64)
+                return "e asm.arch=riscv;e asm.bits=64";
 
             if (_arch == eArch.x86)
                 return "e asm.arch=x86;e asm.bits=32";
