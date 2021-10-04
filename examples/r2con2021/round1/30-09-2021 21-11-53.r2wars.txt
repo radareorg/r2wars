@@ -1,0 +1,64 @@
+RANKING
+==============
+Combat 6 / 6
+
+1 old-flacucho.arm-32 3,00 (3-0-0 with 6 overall).
+2 ricardoapl.x86-32 2,00 (2-0-1 with 4 overall).
+3 amphibia.arm-32 1,00 (1-0-2 with 3 overall).
+4 x3ero0.x86-64 0,00 (0-0-3 with 0 overall).
+
+FULL LOG
+==============
+Tournament start 30/09/2021 21:10:51
+Combat initialized 1 amphibia.arm-32 vs old-flacucho.arm-32
+    Round-1 amphibia.arm-32 Wins Cycles:72
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x00000064      invalid
+    Round-2 old-flacucho.arm-32 Wins Cycles:98
+     Dead Reason     : Instruction Read/Write out of ARENA.
+     Dead Instruction: 0x00000204      pushge {r0, r1, r2, r3, r4, r5, r6, r7, r8, sb, sl, fp, ip, sp, lr, pc}
+    Round-3 old-flacucho.arm-32 Wins Cycles:46
+     Dead Reason     : Instruction Read/Write out of ARENA.
+     Dead Instruction: 0x00000164      pushge {r0, r1, r2, r3, r4, r5, r6, r7, r8, sb, sl, fp, ip, sp, lr, pc}
+Combat Winner: old-flacucho.arm-32
+Combat initialized 2 ricardoapl.x86-32 vs x3ero0.x86-64
+    Round-1 ricardoapl.x86-32 Wins Cycles:220
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x00000354      invalid
+    Round-2 ricardoapl.x86-32 Wins Cycles:91
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x00000138      invalid
+Combat Winner: ricardoapl.x86-32
+Combat initialized 3 amphibia.arm-32 vs ricardoapl.x86-32
+    Round-1 ricardoapl.x86-32 Wins Cycles:57
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x000001d4      invalid
+    Round-2 ricardoapl.x86-32 Wins Cycles:58
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x000001a8      invalid
+Combat Winner: ricardoapl.x86-32
+Combat initialized 4 old-flacucho.arm-32 vs x3ero0.x86-64
+    Round-1 old-flacucho.arm-32 Wins Cycles:108
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x000002ba      invalid
+    Round-2 old-flacucho.arm-32 Wins Cycles:55
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x00000390      invalid
+Combat Winner: old-flacucho.arm-32
+Combat initialized 5 amphibia.arm-32 vs x3ero0.x86-64
+    Round-1 amphibia.arm-32 Wins Cycles:48
+     Dead Reason     : Executed invalid instruction out of ARENA
+     Dead Instruction: 0xffffffffe92e0163      invalid
+    Round-2 amphibia.arm-32 Wins Cycles:43
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x00000272      invalid
+Combat Winner: amphibia.arm-32
+Combat initialized 6 old-flacucho.arm-32 vs ricardoapl.x86-32
+    Round-1 old-flacucho.arm-32 Wins Cycles:94
+     Dead Reason     : Instruction Read/Write out of ARENA.
+     Dead Instruction: 0x00000189      jmp [0x2dffffa9]
+    Round-2 old-flacucho.arm-32 Wins Cycles:113
+     Dead Reason     : Executed invalid instruction
+     Dead Instruction: 0x00000128      invalid
+Combat Winner: old-flacucho.arm-32
+Tournament end 30/09/2021 21:11:53
