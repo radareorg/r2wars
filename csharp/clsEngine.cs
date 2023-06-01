@@ -20,7 +20,7 @@ namespace r2warsTorneo
             i8051,
             riscv32,
             riscv64,
-            unknow
+            unknown
         }
         public static string archName(eArch _arch)
         {
@@ -50,7 +50,7 @@ namespace r2warsTorneo
                 return "x86 32 bits";
             if (_arch == eArch.x64)
                 return "x86 64 bits";
-            return "unknow arch";
+            return "unknown arch";
 
         }
         public static eArch archfromfileext(string ext)
@@ -81,7 +81,7 @@ namespace r2warsTorneo
                 return eArch.gb;
             if (ext.Contains(".8051."))
                 return eArch.i8051;
-            return eArch.unknow;
+            return eArch.unknown;
         }
         public static string rasm2param(eArch _arch)
         {
@@ -391,13 +391,13 @@ namespace r2warsTorneo
                 string[] newrasm2params = { "", "" };
                 string[] newfile = { "", "" };
                 string[] newr2params = { "", "" };
-                r2archs.eArch[] newarch = { r2archs.eArch.unknow, r2archs.eArch.unknow };
+                r2archs.eArch[] newarch = { r2archs.eArch.unknown, r2archs.eArch.unknown };
                 Console.WriteLine("==== LOADING WARRIOR ====");
                 for (int x = 0; x < this.nPlayers; x++)
                 {
 
                     newfile[x] = files[x];
-                    newarch [x] = r2archs.archfromfileext(newfile[x]);
+                    newarch[x] = r2archs.archfromfileext(newfile[x]);
                     newr2params[x] = r2archs.r2param(newarch[x]);
                     newrasm2params[x] = r2archs.rasm2param(newarch[x]);
                     Console.WriteLine(" rasm params = {0} {1}", newrasm2params[x], newfile[x]);
