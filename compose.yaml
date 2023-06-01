@@ -1,0 +1,12 @@
+services:
+  r2wars:
+    image: r2wars:latest
+    build: .
+    volumes:
+      - ./warriors:/r2wars/warriors:ro
+    ports:
+      - 127.0.0.1:9664:9664
+      - 127.0.0.1:9966:9966
+    init: true
+    tty: true
+    container_name: r2wars
