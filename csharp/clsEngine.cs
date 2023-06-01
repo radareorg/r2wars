@@ -9,7 +9,7 @@ namespace r2warsTorneo
     {
         public enum eArch
         {
-            mips32,
+            mips32 = 1,
             mips64,
             arm16,
             arm32,
@@ -357,7 +357,7 @@ namespace r2warsTorneo
     {
         public  int memsize = 1024;
         public int maxprogsize = 64;
-        private string[] initstate = { "", "","","","","","","","" };
+        private string[] initstate = new string[(int)r2archs.eArch.unknown];
         private IR2Pipe[] r2 = { null, null };
         private int nPlayers = 0;
         public int uidx = 0;
