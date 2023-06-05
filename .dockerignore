@@ -1,0 +1,4 @@
+# Ignore everything...
+*
+# ...apart from the csharp subdirectory which is the only one that's needed
+!csharp/
