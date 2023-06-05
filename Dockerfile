@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:labs
 ARG UBUNTU_RELEASE="latest"
-ARG TIMEZONE="Europe/Zurich"
+ARG TIMEZONE="UTC"
+ARG R2_SOURCE="https://github.com/radareorg/radare2.git"
 ARG R2_INSTALL_DIR="/opt/r2"
 ARG CCACHE_DIR="/root/.cache/ccache"
 ARG CC="ccache gcc"
@@ -49,6 +50,7 @@ FROM base as r2-builder
 ARG CCACHE_DIR
 ARG CC
 ARG CXX
+ARG R2_SOURCE
 ARG R2_INSTALL_DIR
 
 # Install base packages
@@ -65,9 +67,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         git \
         ca-certificates
 
-# Add r2 source from GitHub and build it -- replace the git repo with your
-# local path if you want to build your custom radare2 source tree
-ADD https://github.com/radareorg/radare2.git /r2src
+# By default, add r2 source from GitHub and build it -- replace the git repo
+# with your local path if you want to build your custom radare2 source tree
+ADD ${R2_SOURCE} /r2src
 
 WORKDIR /r2src
 
