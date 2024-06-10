@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:labs
-ARG UBUNTU_RELEASE="latest"
+ARG UBUNTU_RELEASE="22.04"
 ARG TIMEZONE="UTC"
 ARG R2_SOURCE="https://github.com/radareorg/radare2.git"
 ARG R2_INSTALL_DIR="/opt/r2"
