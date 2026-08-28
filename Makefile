@@ -1,4 +1,4 @@
-DOCKER ?= sudo docker
+DOCKER ?= docker
 
 .PHONY: default build start stop clean
 
@@ -15,4 +15,3 @@ stop: ## Tear down the container via docker compose
 
 clean: ## Remove the docker image
 	@$(DOCKER) rmi r2wars:latest
-

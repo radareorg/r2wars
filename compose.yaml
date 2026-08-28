@@ -4,9 +4,19 @@ services:
     build: .
     volumes:
       - ./warriors:/r2wars/warriors:ro
+    expose:
+      - 9664
     ports:
-      - 127.0.0.1:9664:9664
       - 127.0.0.1:9966:9966
     init: true
     tty: true
     container_name: r2wars
+
+  web:
+    image: nginx:alpine
+    depends_on:
+      - r2wars
+    ports:
+      - 127.0.0.1:9664:80
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

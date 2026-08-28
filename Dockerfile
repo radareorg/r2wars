@@ -61,11 +61,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         build-essential \
         ccache \
         cmake \
-        meson \
         ninja-build \
         pkg-config \
         git \
-        ca-certificates
+        ca-certificates \
+        python3-pip && \
+    python3 -m pip install --no-cache-dir 'meson>=0.63'
 
 # By default, add r2 source from GitHub and build it -- replace the git repo
 # with your local path if you want to build your custom radare2 source tree

@@ -29,15 +29,24 @@ namespace r2warsTorneo
 
             var taskA = new Task(() =>
             {
-                var nancyHost = new Nancy.Hosting.Self.NancyHost(new Uri(httpUrl), new CustomBootstrapper());
-                nancyHost.Start();
-                Console.WriteLine("Web server running at " + httpUrl);
+                try
+                {
+                    var nancyHost = new Nancy.Hosting.Self.NancyHost(new Uri(httpUrl), new CustomBootstrapper());
+                    nancyHost.Start();
+                    Console.WriteLine("Web server running at " + httpUrl);
 
-                Process.Start(httpUrl);
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Process.Start(httpUrl);
+                    }
 
-
-                while (!ct.IsCancellationRequested) { Thread.Sleep(1000); }
-                nancyHost.Stop();
+                    while (!ct.IsCancellationRequested) { Thread.Sleep(1000); }
+                    nancyHost.Stop();
+                }
+                catch (Exception exception)
+                {
+                    Console.Error.WriteLine("Failed to start web server: " + exception);
+                }
             }, tokenSource.Token);
 
             var taskB = new Task(() =>
