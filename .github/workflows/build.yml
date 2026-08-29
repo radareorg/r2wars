@@ -18,3 +18,46 @@ jobs:
 
       - name: Build Docker image
         run: make build
+
+  check_release:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.release.outputs.is_release }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check for a release tag
+        id: release
+        shell: bash
+        run: |
+          tag="$(git describe --exact-match --tags "$GITHUB_SHA" 2>/dev/null || true)"
+          if [[ "$tag" =~ ^[0-9] ]]; then
+            echo "is_release=yes" >> "$GITHUB_OUTPUT"
+            echo "tag_name=$tag" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release=no" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.check_release.outputs.is_release == 'yes' }}
+    needs: check_release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3.0.2
+        with:
+          tag_name: ${{ needs.check_release.outputs.tag_name }}
+          name: ${{ needs.check_release.outputs.tag_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
