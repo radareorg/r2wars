@@ -18,3 +18,60 @@ jobs:
 
       - name: Build Docker image
         run: make build
+
+      - name: Check release version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(./version.sh)
+          if [ "$GITHUB_REF_NAME" != "$version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match version $version" >&2
+            exit 1
+          fi
+
+      - name: Create distribution archive
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          archive="r2wars-$GITHUB_REF_NAME"
+          container=$(docker create r2wars:latest)
+          trap 'docker rm -f "$container" >/dev/null' EXIT
+
+          docker cp "$container:/r2wars/." release-bin
+          mkdir "$archive"
+          cp release-bin/*.exe release-bin/*.dll "$archive/"
+          cp -R examples "$archive/warriors"
+          cp RELEASE_README.md "$archive/README.txt"
+          zip -r "$archive.zip" "$archive"
+
+      - name: Store distribution archive
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v7
+        with:
+          name: r2wars-${{ github.ref_name }}
+          path: r2wars-${{ github.ref_name }}.zip
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download distribution archive
+        uses: actions/download-artifact@v8
+        with:
+          name: r2wars-${{ github.ref_name }}
+          path: release
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          archive="release/r2wars-$GITHUB_REF_NAME.zip"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$archive" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$archive" --verify-tag --generate-notes
+          fi
