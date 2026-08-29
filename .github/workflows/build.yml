@@ -11,18 +11,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Build Docker image
-        run: make build
-
-  check_release:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-    needs: build
-    runs-on: ubuntu-latest
     outputs:
       is_release: ${{ steps.release.outputs.is_release }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -33,7 +21,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Build Docker image
+        run: make build
+
       - name: Check for a release tag
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         id: release
         shell: bash
         run: |
@@ -45,19 +37,64 @@ jobs:
             echo "is_release=no" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check release version
+        if: ${{ steps.release.outputs.is_release == 'yes' }}
+        env:
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+        run: |
+          version=$(./version.sh)
+          if [ "$TAG_NAME" != "$version" ]; then
+            echo "Tag $TAG_NAME does not match version $version" >&2
+            exit 1
+          fi
+
+      - name: Create distribution archive
+        if: ${{ steps.release.outputs.is_release == 'yes' }}
+        env:
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+        run: |
+          archive="r2wars-$TAG_NAME"
+          container=$(docker create r2wars:latest)
+          trap 'docker rm -f "$container" >/dev/null' EXIT
+
+          docker cp "$container:/r2wars/." release-bin
+          mkdir "$archive"
+          cp release-bin/*.exe release-bin/*.dll "$archive/"
+          cp -R examples "$archive/warriors"
+          cp RELEASE_README.md "$archive/README.txt"
+          zip -r "$archive.zip" "$archive"
+
+      - name: Store distribution archive
+        if: ${{ steps.release.outputs.is_release == 'yes' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: r2wars-${{ steps.release.outputs.tag_name }}
+          path: r2wars-${{ steps.release.outputs.tag_name }}.zip
+          if-no-files-found: error
+
   release:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.check_release.outputs.is_release == 'yes' }}
-    needs: check_release
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.build.outputs.is_release == 'yes' }}
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v3.0.2
+      - name: Download distribution archive
+        uses: actions/download-artifact@v8
         with:
-          tag_name: ${{ needs.check_release.outputs.tag_name }}
-          name: ${{ needs.check_release.outputs.tag_name }}
-          generate_release_notes: true
-          draft: false
-          prerelease: false
+          name: r2wars-${{ needs.build.outputs.tag_name }}
+          path: release
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ needs.build.outputs.tag_name }}
+        run: |
+          archive="release/r2wars-$TAG_NAME.zip"
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$archive" --clobber
+          else
+            gh release create "$TAG_NAME" "$archive" --verify-tag --generate-notes
+          fi
