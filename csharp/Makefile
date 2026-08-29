@@ -1,4 +1,4 @@
-VERSION=$(shell git tag|tail -n1)
+VERSION=$(shell ../version.sh)
 R2W=r2wars-$(VERSION)
 
 all:
