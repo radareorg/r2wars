@@ -35,11 +35,17 @@ from the M
 
 ## Dependencies
 
-* Mono / .NET Runtime (always from mono project some distros packages dont work)
+* .NET 10 SDK (to build) or ASP.NET Core Runtime 10 (to run a published build)
 * radare2
 
-On windows you need to have radare2.exe and rasm2.exe in the same
-directory as the r2wars.exe executable.
+Run the application from the repository root with:
+
+    dotnet run --project csharp/r2wars.csproj -- warriors
+
+Then open `http://127.0.0.1:9664/`.
+
+On Windows you need to have radare2.exe and rasm2.exe in the published
+application directory or in `PATH`.
 
 On Mac/Linux/BSD, r2wars will try to find them in the PATH.
 

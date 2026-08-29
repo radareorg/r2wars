@@ -12,8 +12,8 @@ supporting other architectures with ESIL as emulation engine.
 Introduction
 ------------
 
-In order to start the competition you need to run r2wars.exe
-which is written in C# and runs on Mono, .NET/Core or MSCLR.
+In order to start the competition you need the ASP.NET Core Runtime 10,
+then run `dotnet r2wars.dll [warriors-directory]`.
 
 The UI has been rewritten from the original MFC to be in HTML,
 so the program will run a local webserver which serves a

@@ -1,100 +1,185 @@
-﻿using WebSocketSharp;
-using WebSocketSharp.Server;
+using System;
+using System.IO;
+using System.Net.WebSockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+
 namespace r2warsTorneo
 {
-    public class r2warsWebSocket : WebSocketBehavior
+    public static class r2warsWebSocket
     {
-        MyHandler1 h1;
-        protected override void OnMessage(MessageEventArgs e)
+        private const int MaxMessageSize = 1024 * 1024;
+
+        public static async Task HandleAsync(WebSocket socket, CancellationToken cancellationToken)
         {
-            string recv = e.Data;
-            string msg = "";
-            if (recv == "cmd_state")
+            Channel<string> outgoing = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
             {
-                msg = r2warsStatic.torneo.GetStateJson();
-            }
-            else if (recv == "cmd_prevlog")
+                SingleReader = true,
+                SingleWriter = false
+            });
+
+            MyHandler1 drawHandler = (sender, drawEvent) =>
             {
-                msg = r2warsStatic.r2w.prevLog();
-            }
-            else if (recv == "cmd_nextlog")
+                r2warsStatic.r2w.sync_var = false;
+                outgoing.Writer.TryWrite(drawEvent.message);
+            };
+
+            using CancellationTokenSource connectionCancellation =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            CancellationToken connectionToken = connectionCancellation.Token;
+
+            r2warsStatic.r2w.Event_draw += drawHandler;
+            outgoing.Writer.TryWrite(r2warsStatic.torneo.GetStateJson());
+
+            try
             {
-                msg = r2warsStatic.r2w.nextLog();
+                Task receiveTask = ReceiveLoopAsync(socket, outgoing.Writer, connectionToken);
+                Task sendTask = SendLoopAsync(socket, outgoing.Reader, connectionToken);
+
+                await Task.WhenAny(receiveTask, sendTask);
+                connectionCancellation.Cancel();
+                outgoing.Writer.TryComplete();
+
+                try
+                {
+                    await Task.WhenAll(receiveTask, sendTask);
+                }
+                catch (OperationCanceledException) when (connectionToken.IsCancellationRequested)
+                {
+                }
+                catch (WebSocketException)
+                {
+                    // The peer disconnected without completing a close handshake.
+                }
             }
-            else if (recv == "cmd_load")
+            finally
             {
-                r2warsStatic.torneo.LoadTournamentPlayers();
+                r2warsStatic.r2w.Event_draw -= drawHandler;
+                outgoing.Writer.TryComplete();
             }
-            else if (recv == "cmd_reset")
-            {
-                r2warsStatic.torneo.ResetTournament();
-            }
-            else if (recv == "cmd_run")
-            {
-                r2warsStatic.torneo.RunTournamentCombats();
-            }
-            else if (recv == "cmd_stop")
-            {
-                r2warsStatic.torneo.StopActualCombat();
-            }
-            else if (recv == "cmd_step" || recv == "cmd_next")
-            {
-                r2warsStatic.torneo.StepTournamentCombats();
-            }
-            else if (recv == "cmd_dbg4")
-            {
-                r2warsStatic.r2w.bStopAtRoundStart = false;
-            }
-            else if (recv == "cmd_dbg4si")
-            {
-                r2warsStatic.r2w.bStopAtRoundStart = true;
-            }
-            else if (recv == "cmd_dbg5")
-            {
-                r2warsStatic.r2w.bStopAtRoundEnd = false;
-            }
-            else if (recv == "cmd_dbg5si")
-            {
-                r2warsStatic.r2w.bStopAtRoundEnd = true;
-            }
-            else if (recv == "moreflow")
-            {
-                r2warsStatic.r2w.sync_var = true;
-                msg = "none";
-            }
-            else if (recv == "arch_arm")
-            {
-                r2warsStatic.r2w.answer = "arm";
-            }
-            else if (recv == "arch_x86")
-            {
-                r2warsStatic.r2w.answer = "x86";
-            }
-            if (msg!="")
-                Send(msg);
-        }
-        private void R2wars_EventPinta(object sender, MyEvent e)
-        {
-            r2warsStatic.r2w.sync_var = false;
-            Send(e.message);
-        }
-        protected override void OnError(ErrorEventArgs e)
-        {
-            base.OnError(e);
         }
 
-        protected override void OnClose(CloseEventArgs e)
+        private static async Task ReceiveLoopAsync(
+            WebSocket socket,
+            ChannelWriter<string> outgoing,
+            CancellationToken cancellationToken)
         {
-            if (h1 != null)
-                r2warsStatic.r2w.Event_draw -= h1;
-            base.OnClose(e);
+            byte[] buffer = new byte[4096];
+
+            while (socket.State == WebSocketState.Open)
+            {
+                using MemoryStream message = new MemoryStream();
+                WebSocketReceiveResult result;
+
+                do
+                {
+                    result = await socket.ReceiveAsync(
+                        new ArraySegment<byte>(buffer), cancellationToken);
+
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        await socket.CloseOutputAsync(
+                            WebSocketCloseStatus.NormalClosure,
+                            "Closing",
+                            CancellationToken.None);
+                        return;
+                    }
+
+                    if (result.MessageType != WebSocketMessageType.Text)
+                    {
+                        await socket.CloseAsync(
+                            WebSocketCloseStatus.InvalidMessageType,
+                            "Only text commands are supported.",
+                            cancellationToken);
+                        return;
+                    }
+
+                    message.Write(buffer, 0, result.Count);
+                    if (message.Length > MaxMessageSize)
+                    {
+                        await socket.CloseAsync(
+                            WebSocketCloseStatus.MessageTooBig,
+                            "Command is too large.",
+                            cancellationToken);
+                        return;
+                    }
+                }
+                while (!result.EndOfMessage);
+
+                string response = Dispatch(Encoding.UTF8.GetString(message.ToArray()));
+                if (!string.IsNullOrEmpty(response))
+                    outgoing.TryWrite(response);
+            }
         }
-        protected override void OnOpen()
+
+        private static async Task SendLoopAsync(
+            WebSocket socket,
+            ChannelReader<string> outgoing,
+            CancellationToken cancellationToken)
         {
-            h1 = new MyHandler1(R2wars_EventPinta);
-            r2warsStatic.r2w.Event_draw += h1;
-            Send(r2warsStatic.torneo.GetStateJson());
-            base.OnOpen();
+            await foreach (string message in outgoing.ReadAllAsync(cancellationToken))
+            {
+                byte[] payload = Encoding.UTF8.GetBytes(message);
+                await socket.SendAsync(
+                    new ArraySegment<byte>(payload),
+                    WebSocketMessageType.Text,
+                    true,
+                    cancellationToken);
+            }
+        }
+
+        private static string Dispatch(string command)
+        {
+            switch (command)
+            {
+                case "cmd_state":
+                    return r2warsStatic.torneo.GetStateJson();
+                case "cmd_prevlog":
+                    return r2warsStatic.r2w.prevLog();
+                case "cmd_nextlog":
+                    return r2warsStatic.r2w.nextLog();
+                case "cmd_load":
+                    r2warsStatic.torneo.LoadTournamentPlayers();
+                    break;
+                case "cmd_reset":
+                    r2warsStatic.torneo.ResetTournament();
+                    break;
+                case "cmd_run":
+                    r2warsStatic.torneo.RunTournamentCombats();
+                    break;
+                case "cmd_stop":
+                    r2warsStatic.torneo.StopActualCombat();
+                    break;
+                case "cmd_step":
+                case "cmd_next":
+                    r2warsStatic.torneo.StepTournamentCombats();
+                    break;
+                case "cmd_dbg4":
+                    r2warsStatic.r2w.bStopAtRoundStart = false;
+                    break;
+                case "cmd_dbg4si":
+                    r2warsStatic.r2w.bStopAtRoundStart = true;
+                    break;
+                case "cmd_dbg5":
+                    r2warsStatic.r2w.bStopAtRoundEnd = false;
+                    break;
+                case "cmd_dbg5si":
+                    r2warsStatic.r2w.bStopAtRoundEnd = true;
+                    break;
+                case "moreflow":
+                    r2warsStatic.r2w.sync_var = true;
+                    return "none";
+                case "arch_arm":
+                    r2warsStatic.r2w.answer = "arm";
+                    break;
+                case "arch_x86":
+                    r2warsStatic.r2w.answer = "x86";
+                    break;
+            }
+
+            return null;
         }
     }
 }

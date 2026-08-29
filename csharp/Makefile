@@ -1,22 +1,22 @@
 VERSION=$(shell ../version.sh)
 R2W=r2wars-$(VERSION)
+DOTNET?=dotnet
 
 all:
-	msbuild r2wars.sln
+	$(DOTNET) build r2wars.sln
 
 run:
-	mono bin/Release/r2wars.exe
+	$(DOTNET) run --project r2wars.csproj -- ../warriors
 
 ls:
 	$(SHELL) lsbots.sh
 
 dist:
-	msbuild r2wars.sln /p:Configuration=Release
 	rm -rf $(R2W)
-	mkdir -p $(R2W)
-	cp -rf examples bin/Release/*.exe bin/Release/*.dll $(R2W)
-	cp -f RELEASE_README.md $(R2W)/README.txt
-	mv $(R2W)/examples $(R2W)/warriors
+	$(DOTNET) publish r2wars.csproj --configuration Release --output $(R2W) --no-self-contained
+	cp -f ../RELEASE_README.md $(R2W)/README.txt
+	mkdir -p $(R2W)/warriors
+	cp -rf ../examples/. $(R2W)/warriors
 	zip -r $(R2W).zip $(R2W)
 	rm -rf $(R2W)
 
@@ -24,4 +24,5 @@ r2w32:
 	wget -c http://radare.mikelloc.com/get/2.7.0/radare2_installer-msvc_64-2.7.0.exe
 
 clean:
-	rm -rf bin obj r2wars r2wars.zip
+	$(DOTNET) clean r2wars.sln
+	rm -rf bin obj r2wars-*.zip

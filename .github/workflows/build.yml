@@ -59,7 +59,7 @@ jobs:
 
           docker cp "$container:/r2wars/." release-bin
           mkdir "$archive"
-          cp release-bin/*.exe release-bin/*.dll "$archive/"
+          cp -R release-bin/. "$archive/"
           cp -R examples "$archive/warriors"
           cp RELEASE_README.md "$archive/README.txt"
           zip -r "$archive.zip" "$archive"

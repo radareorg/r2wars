@@ -3,21 +3,18 @@
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-ASSEMBLY_INFO="$SCRIPT_DIR/csharp/Properties/AssemblyInfo.cs"
+PROJECT_FILE="$SCRIPT_DIR/csharp/r2wars.csproj"
 
-if [ ! -f "$ASSEMBLY_INFO" ]; then
-	printf '%s\n' "version.sh: missing assembly file: $ASSEMBLY_INFO" >&2
+if [ ! -f "$PROJECT_FILE" ]; then
+	printf '%s\n' "version.sh: missing project file: $PROJECT_FILE" >&2
 	exit 1
 fi
 
-assembly_version=$(sed -n 's/^[[:space:]]*\[assembly:[[:space:]]*AssemblyVersion("\([0-9][0-9.]*\)")\][[:space:]]*$/\1/p' "$ASSEMBLY_INFO")
-if [ -z "$assembly_version" ]; then
+current_version=$(sed -n 's|^[[:space:]]*<Version>\([0-9][0-9.]*\)</Version>[[:space:]]*$|\1|p' "$PROJECT_FILE")
+if [ -z "$current_version" ]; then
 	printf '%s\n' "version.sh: cannot read the current version" >&2
 	exit 1
 fi
-
-# .NET assembly versions have a fourth revision component. Release versions do not.
-current_version=${assembly_version%.0}
 
 if [ "$#" -eq 0 ]; then
 	printf '%s\n' "$current_version"
@@ -35,14 +32,12 @@ if ! printf '%s\n' "$new_version" | grep -Eq '^[0-9]+(\.[0-9]+){2}$'; then
 	exit 1
 fi
 
-new_assembly_version="$new_version.0"
 temporary_file=$(mktemp "${TMPDIR:-/tmp}/r2wars-version.XXXXXX")
 trap 'rm -f "$temporary_file"' EXIT HUP INT TERM
 
 sed -E \
-	-e "s/^([[:space:]]*\[assembly:[[:space:]]*AssemblyVersion\(\")[0-9.]+(\"\)\][[:space:]]*)$/\1${new_assembly_version}\2/" \
-	-e "s/^([[:space:]]*\[assembly:[[:space:]]*AssemblyFileVersion\(\")[0-9.]+(\"\)\][[:space:]]*)$/\1${new_assembly_version}\2/" \
-	"$ASSEMBLY_INFO" > "$temporary_file"
-cp "$temporary_file" "$ASSEMBLY_INFO"
+	-e "s|^([[:space:]]*<Version>)[0-9.]+(</Version>[[:space:]]*)$|\1${new_version}\2|" \
+	"$PROJECT_FILE" > "$temporary_file"
+cp "$temporary_file" "$PROJECT_FILE"
 
 printf '%s -> %s\n' "$current_version" "$new_version"

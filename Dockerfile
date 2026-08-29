@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:labs
-ARG UBUNTU_RELEASE="22.04"
+ARG UBUNTU_RELEASE="24.04"
 ARG TIMEZONE="UTC"
+ARG DOTNET_IMAGE="10.0-noble"
 ARG R2_SOURCE="https://github.com/radareorg/radare2.git"
 ARG R2_INSTALL_DIR="/opt/r2"
 ARG CCACHE_DIR="/root/.cache/ccache"
@@ -11,7 +12,7 @@ ARG CXX="ccache g++"
 ################################################################################
 # Base image for builder/runner                                                #
 ################################################################################
-FROM ubuntu:${UBUNTU_RELEASE} as base
+FROM ubuntu:${UBUNTU_RELEASE} AS base
 ARG TIMEZONE
 
 # Prepare timezone settings
@@ -27,26 +28,22 @@ RUN rm -f /etc/apt/apt.conf.d/docker-clean && \
 ################################################################################
 # r2wars builder                                                               #
 ################################################################################
-FROM base as r2wars-builder
-
-# Install base packages
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        mono-complete
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_IMAGE} AS r2wars-builder
 
 # Add r2wars source and build it
 COPY --link csharp /r2wars
 
 WORKDIR /r2wars
-RUN xbuild /p:Configuration=Release r2wars.csproj
+RUN dotnet publish r2wars.csproj \
+        --configuration Release \
+        --output /r2wars-publish \
+        --no-self-contained
 
 
 ################################################################################
 # r2 builder                                                                   #
 ################################################################################
-FROM base as r2-builder
+FROM base AS r2-builder
 ARG CCACHE_DIR
 ARG CC
 ARG CXX
@@ -84,23 +81,18 @@ RUN --mount=type=cache,id=ccache,target=${CCACHE_DIR},sharing=shared \
 ################################################################################
 # r2wars runner                                                                #
 ################################################################################
-FROM base as runner
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_IMAGE} AS runner
 ARG R2_INSTALL_DIR
+ARG TIMEZONE
 
-# Install base packages
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        mono-runtime \
-        nuget
+ENV TZ=${TIMEZONE}
 
 # Copy r2 and r2wars in from the build stages
-COPY --from=r2wars-builder --link /r2wars/bin/Release /r2wars
+COPY --from=r2wars-builder --link /r2wars-publish /r2wars
 COPY --from=r2-builder --link ${R2_INSTALL_DIR} ${R2_INSTALL_DIR}
 ENV PATH=${PATH}:${R2_INSTALL_DIR}/bin
 
 EXPOSE 9664 9966
 
 WORKDIR /r2wars
-ENTRYPOINT ["mono", "r2wars.exe"]
+ENTRYPOINT ["dotnet", "r2wars.dll"]

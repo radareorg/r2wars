@@ -1,34 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using System.IO;
-
-public static class OperatingSystem
-{
-    public static bool IsWindows()
-    {
-        string windir = Environment.GetEnvironmentVariable("windir");
-        return (!string.IsNullOrEmpty(windir) && windir.Contains(@"\") && Directory.Exists(windir));
-    }
-
-    public static bool IsMacOS()
-    {
-        return File.Exists(@"/System/Library/CoreServices/SystemVersion.plist");
-    }
-
-    public static bool IsLinux()
-    {
-        if (File.Exists(@"/proc/sys/kernel/ostype"))
-        {
-            string osType = File.ReadAllText(@"/proc/sys/kernel/ostype");
-            return osType.StartsWith("Linux", StringComparison.OrdinalIgnoreCase);
-        }
-        return false;
-    }
-}
 namespace r2warsTorneo
 {
     public class r2wars
