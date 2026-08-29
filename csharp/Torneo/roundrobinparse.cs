@@ -386,11 +386,11 @@
                 lastRecord = rank.Record;
                 lastRank = rank.Rank;
 
-                string scoreDescription = String.Format("{0:F} ({1}-{2}-{3} with {4} overall).", rank.Record.WinRecord, rank.Record.Wins, rank.Record.Draws, rank.Record.Losses, rank.Record.OverallScore);
+                string roundWins = rank.Record.OverallScore == null ? "0" : rank.Record.OverallScore.ToString();
+                string scoreDescription = String.Format("{0:0.0} match pts · {1}W {2}D {3}L · {4} round wins", rank.Record.WinRecord, rank.Record.Wins, rank.Record.Draws, rank.Record.Losses, roundWins);
                 yield return new TournamentRanking(rank.Team, rank.Rank, scoreDescription);
             }
 
             yield break;
         }
     }
-

@@ -1,280 +1,292 @@
 ﻿<script>
-    var clicked = false;
-    var clicked1 = false;
-    var otroscore = "";
+    var state = {
+        workflow: 'idle',
+        message: 'Load warriors to begin.',
+        player1: { regs: '', code: '', name: 'Player 1' },
+        player2: { regs: '', code: '', name: 'Player 2' },
+        memory: [],
+        console: '[r2wars]',
+        status: 'Idle',
+        scores: 'No tournament loaded.',
+        completedCombats: 0,
+        totalCombats: 0,
+        activePlayer: -1,
+        historyPosition: 0,
+        historyCount: 0,
+        canBrowseEarlier: false,
+        canBrowseLater: false
+    };
+    var socket = null;
+    var socketReady = false;
+    var actionPending = false;
+    var reconnectTimer = null;
+
+    function $(id) {
+        return document.getElementById(id);
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-      $('cmd_scores').addEventListener('click', () => {
-          on();
-      });
-      $('lt').addEventListener('click', () => {
-          socket.send("cmd_prevlog");
-
-      });
-      $('gt').addEventListener('click', () => {
-          socket.send("cmd_nextlog");
-      });
-      $('cmd_load').addEventListener('click', () => {
-          socket.send("cmd_load");
-
-      });
-      $('cmd_run').addEventListener('click', () => {
-          socket.send("cmd_run");
-
-      });
-      $('cmd_stop').addEventListener('click', () => {
-          socket.send("cmd_stop");
-
-      });
-      $('cmd_next').addEventListener('click', () => {
-          socket.send("cmd_next");
-
-      });
-      $('dbg4').addEventListener('click', () => {
-          if (document.getElementById("dbg4").checked) {
-              socket.send("cmd_dbg4si");
-          }
-          else {
-              socket.send("cmd_dbg4");
-          }
-
-      });
-      $('dbg5').addEventListener('click', () => {
-          if (document.getElementById("dbg5").checked) {
-              socket.send("cmd_dbg5si");
-          }
-          else {
-              socket.send("cmd_dbg5");
-          }
-
-      });
-
-      $('x86').addEventListener('click', () => {
-          hideArchDlg();
-          socket.send("arch_x86")
-      });
-      $('arm').addEventListener('click', () => {
-          hideArchDlg();
-          socket.send("arch_arm")
-      });
-      $('nowarriorsdlg').addEventListener('click', () => {
-          hideNoWarriorsDlg();
-      });
-
-      updateUI();
+        $('cmd_load').addEventListener('click', function () {
+            sendAction('cmd_load', 'Loading warriors…');
+        });
+        $('cmd_run').addEventListener('click', function () {
+            sendAction(state.workflow === 'running' ? 'cmd_stop' : 'cmd_run',
+                state.workflow === 'running' ? 'Pausing safely…' : 'Starting tournament…');
+        });
+        $('cmd_step').addEventListener('click', function () {
+            sendAction('cmd_step', 'Advancing one cycle…');
+        });
+        $('cmd_reset').addEventListener('click', function () {
+            var active = state.workflow === 'running' || state.workflow === 'paused';
+            if (!active || window.confirm('Reset this tournament? Current progress and scores will be cleared.'))
+                sendAction('cmd_reset', 'Resetting tournament and scores…');
+        });
+        $('cmd_scores').addEventListener('click', showScores);
+        $('log_prev').addEventListener('click', function () { sendCommand('cmd_prevlog'); });
+        $('log_next').addEventListener('click', function () { sendCommand('cmd_nextlog'); });
+        $('score_close').addEventListener('click', hideScores);
+        $('nowarriorsclose').addEventListener('click', hideNoWarriorsDialog);
+        $('overlay').addEventListener('click', function (event) {
+            if (event.target === $('overlay')) hideScores();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hideScores();
+                hideNoWarriorsDialog();
+            }
+        });
+        updateUI(true);
+        connectSocket();
     });
 
+    function socketUrl() {
+        if (window.R2WARS_WS_URL) return window.R2WARS_WS_URL;
+        var scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        return scheme + '://' + window.location.hostname + ':9966/r2wars';
+    }
 
-    var state = {};
+    function connectSocket() {
+        clearTimeout(reconnectTimer);
+        $('connection').textContent = 'Connecting…';
+        $('connection').className = 'connection connecting';
+        socket = new WebSocket(socketUrl());
+        socket.onopen = function () {
+            socketReady = true;
+            $('connection').textContent = 'Connected';
+            $('connection').className = 'connection connected';
+            socket.send('cmd_state');
+            syncControls();
+        };
+        socket.onclose = function () {
+            socketReady = false;
+            actionPending = false;
+            $('connection').textContent = 'Disconnected — reconnecting…';
+            $('connection').className = 'connection disconnected';
+            syncControls();
+            reconnectTimer = setTimeout(connectSocket, 2000);
+        };
+        socket.onerror = function () {
+            $('connection').textContent = 'Connection error';
+            $('connection').className = 'connection disconnected';
+        };
+        socket.onmessage = handleSocketMessage;
+    }
 
-    resetState();
-
-    var socket = new WebSocket('ws://localhost:9966/r2wars');
-    socket.onopen = function ()
-    {
-    };
-    socket.onclose = function ()
-    {
-    };
-
-    socket.onmessage = function (evt) {
-        //alert(evt.data);
-        if (evt.data !== "none") {
-
-            if (evt.data == "on") {
-                on();
-                socket.send("moreflow");
-            }
-            else if (evt.data == "off") {
-                off();
-                socket.send("moreflow");
-            }
-            else if (evt.data == "askarch") {
-                showArchDlg();
-            }
-            else if (evt.data == "nowarriors") {
-                showNoWarriorsDlg();
-            }
-            else {
-                state = JSON.parse(evt.data);
-                updateUI();
-                //socket.send("moreflow");
-            }
+    function sendCommand(command) {
+        if (!socketReady || !socket || socket.readyState !== WebSocket.OPEN) {
+            $('connection').textContent = 'Waiting for connection…';
+            return false;
         }
-    };
-
-    function resetState() {
-    state = {
-      player1: {
-        regs: '',
-        code: '',
-        name: 'Player - 1',
-      },
-      player2: {
-        regs: '',
-        code: '',
-        name: 'Player - 2',
-      },
-      memory: [
-        '',
-        '',
-        '',
-        '',
-      ],
-      console: '[r2wars]',
-      status: 'idle',
-      scores: ''
-    };
+        socket.send(command);
+        return true;
     }
 
-    function updateUI() {
-      if (state.hasOwnProperty("memory"))
-      {
-          var memory = memoryWidget();
-          $('memory').innerHTML = memory;
-      }
-      if (state && state.status)
-        $('status').innerHTML = state.status;
-      if (state && state.console)
-        $('console').innerHTML = state.console;
-      if (state && state.player1 && state.player1.regs)
-        $('regs1').innerHTML = state.player1.regs;
-      if (state && state.player1 && state.player1.code)
-        $('code1').innerHTML = state.player1.code;
-      if (state && state.player2 && state.player2.regs)
-        $('regs2').innerHTML = state.player2.regs;
-      if (state && state.player2 && state.player2.code)
-        $('code2').innerHTML = state.player2.code;
-      if (state && state.player1 && state.player1.name)
-        $('player1').innerHTML = state.player1.name;
-      if (state && state.player2 && state.player2.name)
-        $('player2').innerHTML = state.player2.name;
-      if (state && state.scores) {
-          otroscore = state.scores;
-      }
-      if (state && state.infodead) {
-          $('scores').innerHTML = state.infodead;
-      }
-
+    function sendAction(command, pendingMessage) {
+        if (!sendCommand(command)) return;
+        actionPending = true;
+        $('workflow_message').textContent = pendingMessage;
+        syncControls();
     }
 
-    function addrForRow(x) {
-      return "0x" + ("0000" + x.toString(16)).substr(-4);
+    function handleSocketMessage(event) {
+        if (event.data === 'none') return;
+        if (event.data === 'nowarriors') {
+            showNoWarriorsDialog();
+            return;
+        }
+        if (event.data === 'on') {
+            sendCommand('moreflow');
+            return;
+        }
+        if (event.data === 'off') {
+            hideScores();
+            sendCommand('moreflow');
+            return;
+        }
+
+        try {
+            var update = JSON.parse(event.data);
+            var memoryChanged = Object.prototype.hasOwnProperty.call(update, 'memory');
+            Object.assign(state, update);
+            actionPending = false;
+            updateUI(memoryChanged);
+        }
+        catch (error) {
+            console.error('Invalid r2wars update', error, event.data);
+            $('workflow_message').textContent = 'The server sent an invalid update. Reload the page if this continues.';
+        }
     }
 
-    function styler(x) {
-      var color='white';
-      switch(x) {
-      case 'r': color='red'; break;
-      case 'y': color='yellow'; break;
-      case 'g': color='green'; break;
-      case 'w': color='white'; break;
-      case 'n': color='black'; break;
-      case 'b': color='blue'; break;
-      case 'q': color='aqua'; break;
-      case 'o': color='orange'; break;
-      case 'v': color='violet'; break;
-      }
-      return 'background-color:'+ color;
+    function syncControls() {
+        var workflow = state.workflow || 'idle';
+        var ready = workflow === 'ready';
+        var paused = workflow === 'paused';
+        var running = workflow === 'running';
+        var finished = workflow === 'finished';
+        var connected = socketReady && !actionPending;
+
+        $('cmd_load').disabled = !connected || running || paused;
+        $('cmd_load').textContent = workflow === 'idle' ? 'Load warriors' : 'Reload warriors';
+
+        $('cmd_run').disabled = !connected || (!ready && !paused && !running);
+        $('cmd_run').textContent = running ? 'Pause' : paused ? 'Resume' : 'Start tournament';
+        $('cmd_run').className = running ? 'primary pause' : 'primary';
+
+        $('cmd_step').disabled = !connected || !paused;
+        $('cmd_reset').disabled = !connected || workflow === 'idle';
+        $('cmd_reset').textContent = finished ? 'Play again' : 'Reset';
+        $('cmd_scores').textContent = finished ? 'Final scores' : 'Scores';
+        $('cmd_scores').disabled = !socketReady || !state.scores || state.scores === 'No tournament loaded.';
+
+        var canBrowseLog = connected && (paused || finished) && state.player1 && state.player1.name !== 'Player 1';
+        $('log_prev').disabled = !canBrowseLog || !state.canBrowseEarlier;
+        $('log_next').disabled = !canBrowseLog || !state.canBrowseLater;
+
+        var workflowLabels = {
+            idle: 'NO TOURNAMENT',
+            ready: 'READY TO START',
+            running: 'RUNNING',
+            paused: 'PAUSED',
+            finished: 'TOURNAMENT OVER'
+        };
+        var stageTitles = {
+            idle: 'No tournament loaded',
+            ready: 'Tournament ready',
+            finished: 'Tournament over'
+        };
+        $('workflow_badge').textContent = workflowLabels[workflow] || workflow;
+        $('workflow_badge').className = 'workflow-badge ' + workflow;
+        $('progress').textContent = workflow === 'idle'
+            ? 'Load warriors to create a tournament'
+            : (state.completedCombats || 0) + ' / ' + (state.totalCombats || 0) + ' battles' + (finished ? ' complete' : '');
+        $('stage_title').textContent = stageTitles[workflow] || '';
+        $('stage_detail').textContent = state.message || '';
+        $('stage_notice').className = 'stage-notice ' + workflow;
+        $('stage_notice').hidden = running || paused;
+    }
+
+    function updateUI(memoryChanged) {
+        if (memoryChanged) $('memory').innerHTML = memoryWidget();
+        $('status').textContent = state.status || '';
+        $('console').textContent = state.console || '';
+        $('workflow_message').textContent = state.message || '';
+
+        if (state.player1) {
+            $('regs1').textContent = state.player1.regs || '';
+            $('code1').innerHTML = state.player1.code || '';
+            $('player1').textContent = state.player1.name || 'Player 1';
+        }
+        if (state.player2) {
+            $('regs2').textContent = state.player2.regs || '';
+            $('code2').innerHTML = state.player2.code || '';
+            $('player2').textContent = state.player2.name || 'Player 2';
+        }
+        setActivePlayer(state.activePlayer);
+        syncControls();
+    }
+
+    function setActivePlayer(activePlayer) {
+        var playerOneIsActive = activePlayer === 0;
+        var playerTwoIsActive = activePlayer === 1;
+        $('active1').classList.toggle('active', playerOneIsActive);
+        $('active2').classList.toggle('active', playerTwoIsActive);
+        $('active1').setAttribute('aria-label', playerOneIsActive ? 'Player 1 has the active turn' : 'Player 1 is waiting');
+        $('active2').setAttribute('aria-label', playerTwoIsActive ? 'Player 2 has the active turn' : 'Player 2 is waiting');
+    }
+
+    function addrForRow(value) {
+        return '0x' + ('0000' + value.toString(16)).substr(-4);
+    }
+
+    function memoryColor(value) {
+        var colors = { r: 'red', y: 'yellow', g: 'green', w: 'white', n: 'black', b: 'blue', q: 'aqua', o: 'orange', v: 'violet' };
+        return colors[value] || 'white';
     }
 
     function memoryWidget() {
-      var a = '<table class="memtable">';
-      var rows = 32;
-      var rowlen = 32;
-      for (i = 0; i<rows; i++) {
-        var addr = addrForRow(i * rowlen);
-        var row = "";
-        for (j = 0; j <rowlen;j++) {
-          var s = state.memory[(i * rowlen) + j];
-          var ch = ((s&&s.length) > 1)? s[1]: '&nbsp;';
-          var style = (s&&s.length > 0)? styler(s[0]): '';
-          row += '<td style="'+style+'" class="box">'+ch+'</td>'
+        var html = '<table class="memtable">';
+        for (var rowIndex = 0; rowIndex < 32; rowIndex++) {
+            var cells = '';
+            for (var column = 0; column < 32; column++) {
+                var value = state.memory[(rowIndex * 32) + column] || '';
+                var marker = value.length > 1 && /^[RWX]$/.test(value[1]) ? value[1] : '&nbsp;';
+                cells += '<td style="background-color:' + memoryColor(value[0]) + '" class="box">' + marker + '</td>';
+            }
+            html += '<tr><td class="addr">' + addrForRow(rowIndex * 32) + '</td>' + cells + '</tr>';
         }
-        a += "<tr><td class='addr'>"+addr+"</td>"+row+"</tr>";
-      }
-      return a + '</table>';
+        return html + '</table>';
     }
 
-    function $(x) {
-      return document.getElementById(x);
+    function showScores() {
+        $('score_title').textContent = state.workflow === 'finished' ? 'Final standings' : 'Tournament scores';
+        $('scores').textContent = state.scores || 'No scores yet.';
+        $('overlay').style.display = 'block';
+        $('score_close').focus();
     }
 
-    function Query(c, cb) {
-      Ajax('GET', '/r2wars/' + encodeURI(c), '', function(x) { if (cb) { cb(x); } });
-    }
-    var ajax_in_process = false;
-    function Ajax(method, uri, body, fn) {
-            if (typeof (XMLHttpRequest) == 'undefined') {
-                    return false;
-            }
-
-            console.log('async waiting');
-            if (ajax_in_process) {
-                    setTimeout(function() {
-                                    Ajax(method, uri, body, fn);
-                            }, 100);
-                    return false;
-            }
-
-
-            var x = new XMLHttpRequest();
-
-            if (!x) {
-                    return false;
-            }
-            ajax_in_process = true;
-
-            x.open(method, uri, false);
-
-            x.setRequestHeader('Accept', 'text/plain');
-            x.setRequestHeader ('Accept', 'text/html');
-            x.onreadystatechange = function() {
-                    ajax_in_process = false;
-                    if (x.status == 200) {
-                            if (fn) {
-                                    fn(x.responseText);
-                            } else {
-                                    console.error('missing ajax callback');
-                            }
-                    } else {
-                            console.error('ajax ' + x.status);
-                    }
-            };
-            x.send(null);
-    }
-    function showscorewindow() {
-        var win = window.open("", "Title", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes");
-        //win.document.body.innerHTML = '<style> div {font-family: Courier New;} .overlay {top: 0%;right:0%;left:0%;bottom: 0%;background-color: rgba(0, 0, 0, 0.9);z-index: 2;cursor: crosshair;position: absolute;border-radius: 0px;border: 1px solid #a0a0a0;}.text1 {position: absolute;font-weight: bold;top: 7%;left: 50%;font-size: 1.7em;color: white;transform: translate(-50%,0%);-ms-transform: translate(-50%,0%);white-space: pre;}.text {position: absolute;top: 4%;left: 50%;font-weight: bold;font-size: 30px;color: springgreen;transform: translate(-50%,-50%);-ms-transform: translate(-50%,-50%);}</style>' + '<div id="overlay" class="overlay" onclick="off()"><div class="text">Score Board</div><div id="scores" class="text1">' + otroscore + '</div></div>';
-        win.document.body.innerHTML = '<style> div {font-family: Courier New;} .overlay {top: 0%;right:0%;left:0%;bottom: 0%;background-color: rgba(0, 0, 0, 0.9);z-index: 2;cursor: crosshair;position: absolute;border-radius: 0px;border: 1px solid #a0a0a0;}.text1 {position: absolute;font-weight: bold;top: 7%;left: 50%;font-size: 2.7em;color: white;transform: translate(-50%,0%);-ms-transform: translate(-50%,0%);white-space: pre;}.text {position: absolute;top: 4%;left: 50%;font-weight: bold;font-size: 56px;color: springgreen;transform: translate(-50%,-50%);-ms-transform: translate(-50%,-50%);}</style>' + '<div id="overlay" class="overlay" onclick="off()"><div class="text">Score Board</div><div id="scores" class="text1">' + otroscore + '</div></div>';
-
-    }
-    function on() {
-        document.getElementById("overlay").style.display = "block";
-        showscorewindow();
+    function hideScores() {
+        $('overlay').style.display = 'none';
     }
 
-    function off() {
-        document.getElementById("overlay").style.display = "none";
-    }
-    function showArchDlg() {
-        document.getElementById("askarchdlg").style.display = "block";
+    function showNoWarriorsDialog() {
+        $('nowarriorsdlg').style.display = 'block';
+        $('nowarriorsclose').focus();
     }
 
-    function hideArchDlg() {
-        document.getElementById("askarchdlg").style.display = "none";
+    function hideNoWarriorsDialog() {
+        $('nowarriorsdlg').style.display = 'none';
     }
-    function showNoWarriorsDlg() {
-        document.getElementById("nowarriorsdlg").style.display = "block";
-    }
-    function hideNoWarriorsDlg() {
-            document.getElementById("nowarriorsdlg").style.display = "none";
-    }
-    display: none;
 </script>
 
 <style>
     button {
         min-width: 10px;
+    }
+
+    button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+
+    .connection {
+        border-radius: 10px;
+        color: #333;
+        font-size: 0.78em;
+        padding: 2px 7px;
+    }
+
+    .connection.connected {
+        background: #c7f4d0;
+        color: #145b23;
+    }
+
+    .connection.connecting {
+        background: #fff2b7;
+    }
+
+    .connection.disconnected {
+        background: #ffd0d0;
+        color: #7b1111;
     }
 
     table {
@@ -314,13 +326,115 @@
 
     .divM2 {
         position: fixed;
-        bottom: 14em;
+        bottom: 16em;
         background-color: #e0e0e0;
         left: 30%;
         right: 30%;
         width: 40%;
-        height: 100px;
+        height: 132px;
+        box-sizing: border-box;
+        border: 1px solid #a0a0a0;
+        padding: 7px;
         overflow: hidden;
+    }
+
+    .status-strip, .inspection-row {
+        align-items: center;
+        display: flex;
+        gap: 7px;
+    }
+
+    .status-strip {
+        justify-content: space-between;
+    }
+
+    .workflow-badge {
+        background: #d2d2d2;
+        border-radius: 10px;
+        font-size: 0.78em;
+        font-weight: bold;
+        padding: 2px 8px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .workflow-badge.ready { background: #d5e9ff; color: #174f85; }
+    .workflow-badge.running { background: #c7f4d0; color: #145b23; }
+    .workflow-badge.paused { background: #fff2b7; color: #705600; }
+    .workflow-badge.finished { background: #d9ccff; color: #41257c; }
+
+    .progress {
+        flex: 1;
+        font-size: 0.78em;
+        font-weight: bold;
+    }
+
+    .workflow-message {
+        height: 30px;
+        line-height: 15px;
+        margin: 5px 1px;
+        overflow: hidden;
+    }
+
+    .stage-notice {
+        background: rgba(18, 18, 18, 0.92);
+        border: 2px solid #aaa;
+        border-radius: 6px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+        color: white;
+        left: 8%;
+        padding: 18px 22px;
+        position: absolute;
+        right: 8%;
+        text-align: center;
+        top: 18%;
+        z-index: 1;
+    }
+
+    .stage-notice[hidden] { display: none; }
+
+    .stage-notice strong {
+        color: springgreen;
+        display: block;
+        font-size: 1.55em;
+        margin-bottom: 8px;
+    }
+
+    .stage-notice.ready strong { color: #8fc7ff; }
+    .stage-notice.finished strong { color: #c9b4ff; }
+
+    .control-row {
+        display: grid;
+        gap: 5px;
+        grid-template-columns: 1.3fr 1.4fr 0.8fr 0.8fr 0.8fr;
+    }
+
+    .control-row button, .inspection-row button {
+        background: #f3f3f3;
+        border: 1px solid #777;
+        border-radius: 3px;
+        min-height: 25px;
+    }
+
+    .control-row button.primary {
+        background: #d8f5de;
+        border-color: #318244;
+        font-weight: bold;
+    }
+
+    .control-row button.primary.pause {
+        background: #fff0bd;
+        border-color: #9a761c;
+    }
+
+    .inspection-row {
+        font-size: 0.75em;
+        justify-content: flex-end;
+        margin-top: 5px;
+    }
+
+    .inspection-row button {
+        max-width: 92px;
     }
 
     .divM {
@@ -358,7 +472,7 @@
     }
 
     .console {
-        height: 16em;
+        height: 14.5em;
         background-color: black;
         color: white;
         font-family: Courier New;
@@ -451,6 +565,28 @@
         padding-left: 0em;
     }
 
+    .active-dot {
+        display: inline-block;
+        width: 0.8em;
+        height: 0.8em;
+        margin: 0 0.5em;
+        border: 2px solid white;
+        border-radius: 50%;
+        background-color: #4b4b4b;
+        vertical-align: middle;
+    }
+
+    .active-dot.active {
+        background-color: #39e75f;
+        box-shadow: 0 0 0.5em #39e75f;
+        animation: active-pulse 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes active-pulse {
+        from { transform: scale(0.85); }
+        to { transform: scale(1.15); }
+    }
+
     .memtable {
         font-size: 10px;
         width: 100%;
@@ -464,33 +600,37 @@
         bottom: 1%;
         background-color: rgba(0, 0, 0, 0.9);
         z-index: 2;
-        cursor: crosshair;
         position: absolute;
         border-radius: 6px;
         border: 3px solid #a0a0a0;
     }
 
     .text {
-        position: absolute;
-        top: 4%;
-        left: 50%;
         font-weight: bold;
+        margin: 24px 80px 12px 30px;
         font-size: 40px;
         color: springgreen;
-        transform: translate(-50%,-50%);
-        -ms-transform: translate(-50%,-50%);
     }
 
     .text1 {
-        position: absolute;
         font-weight: bold;
-        top: 14%;
-        left: 50%;
         font-size: 1.4em;
         color: white;
-        transform: translate(-50%,0%);
-        -ms-transform: translate(-50%,0%);
         white-space: pre;
+        margin: 20px 30px;
+        max-height: calc(100% - 130px);
+        overflow: auto;
+    }
+
+    .overlay-close {
+        background: #e5e5e5;
+        border: 1px solid #888;
+        border-radius: 3px;
+        padding: 7px 18px;
+        position: absolute;
+        right: 24px;
+        top: 24px;
+        width: auto;
     }
 
 
@@ -603,35 +743,19 @@
 
 <html>
 <body>
-    <div id="overlay" class="overlay" onclick="off()">
-        <div class="text">Summary</div>
-        <div id="scores" class="text1"></div>
+    <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="score_title">
+        <div id="score_title" class="text">Tournament scores</div>
+        <button id="score_close" class="overlay-close">Close</button>
+        <pre id="scores" class="text1"></pre>
     </div>
-    <div id="askarchdlg" class="win98">
+    <div id="nowarriorsdlg" class="win98" role="dialog" aria-modal="true" aria-labelledby="warriors-title">
         <div class="header">
-            Multiple warriors detected:
+            <span id="warriors-title">Warriors not found</span>
         </div>
         <div class="content">
             <center>
-                <h3>What Arch do you want to run?</h3>
-                <table style="width:100%">
-                    <tbody>
-                        <tr>
-                            <td><button id="arm">ARM 32 bits</button></td>
-                            <td><button id="x86">X86 32 bits</button></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </center>
-        </div>
-    </div>
-    <div id="nowarriorsdlg" class="win98">
-        <div class="header">
-            Warriors not found:
-        </div>
-        <div class="content">
-            <center>
-                <h3>Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.</h3>
+                <h3>Add at least two .asm warrior files to the warriors directory, then load again.</h3>
+                <button id="nowarriorsclose">Close</button>
             </center>
         </div>
     </div>
@@ -649,7 +773,7 @@
         <table style="height:100%;width:100%">
             <tbody>
                 <tr>
-                    <td class="player1" id="player1">Player1</td>
+                    <td class="player1"><span id="active1" class="active-dot" aria-label="Player 1 is waiting"></span><span id="player1">Player1</span></td>
                 </tr>
                 <tr style="height:100%">
                     <td valign="top" style="overflow-x:hidden;overflow-y:hidden">
@@ -662,6 +786,10 @@
         </table>
     </div>
     <div class="divM" style="overflow-x:hidden">
+        <div id="stage_notice" class="stage-notice idle">
+            <strong id="stage_title">No tournament loaded</strong>
+            <span id="stage_detail">Load warriors to begin.</span>
+        </div>
         <center class="">
             <table style="height:100%;overflow-x:scroll;width:100%">
                 <tbody>
@@ -673,29 +801,24 @@
         </center>
     </div>
     <div class="divM2">
-        <table style="width:100%">
-            <tr style="visibility:visible;width:100%">
-                <td>
-                    <table style="min-width:10px;width:100%">
-                        <tr>
-                            <td><button id="cmd_load">Load</button></td>
-                            <td><button id="cmd_run">Run</button></td>
-                            <td><button id="cmd_stop">Stop</button></td>
-                            <td><button id="cmd_next">Next</button></td>
-                            <td><button id="cmd_scores">Scores</button></td>
-                            <td><button id="lt">&lt;</button></td>
-                            <td><button id="gt">&gt;</button></td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="display:flex">
-                    <input type="checkbox" id="dbg4" value="si">StopOnIni
-                    <input type="checkbox" id="dbg5" value="si">StopOnEnd
-                </td>
-            </tr>
-        </table>
+        <div class="status-strip">
+            <span id="workflow_badge" class="workflow-badge idle">idle</span>
+            <span id="progress" class="progress">0 / 0 battles</span>
+            <span id="connection" class="connection connecting" role="status">Connecting…</span>
+        </div>
+        <div id="workflow_message" class="workflow-message">Load warriors to begin.</div>
+        <div class="control-row">
+            <button id="cmd_load" title="Scan the warriors directory for .asm files">Load warriors</button>
+            <button id="cmd_run" class="primary" title="Start or pause continuous tournament play">Start tournament</button>
+            <button id="cmd_step" title="Advance exactly one engine cycle while paused">Step</button>
+            <button id="cmd_scores" title="Show current standings">Scores</button>
+            <button id="cmd_reset" title="Clear progress and scores for the loaded warriors">Reset</button>
+        </div>
+        <div class="inspection-row">
+            <span>Execution history (paused):</span>
+            <button id="log_prev" title="Show the earlier recorded state for both warriors">Earlier state</button>
+            <button id="log_next" title="Show the later recorded state for both warriors">Later state</button>
+        </div>
     </div>
     <div class="divM3">
         <center class="">
@@ -728,7 +851,7 @@
         <table style="height:100%;width:100%">
             <tbody>
                 <tr>
-                    <td class="player2" id="player2">Player2</td>
+                    <td class="player2"><span id="active2" class="active-dot" aria-label="Player 2 is waiting"></span><span id="player2">Player2</span></td>
                 </tr>
                 <tr style="height:100%">
                     <td valign="top" style="overflow-x:hidden;overflow-y:hidden" height="100%" colspan="3">
@@ -1108,7 +1231,7 @@
                                     <td><button id="cmd_load">Load</button></td>
                                     <td><button id="cmd_run">Run</button></td>
                                     <td><button id="cmd_stop">Stop</button></td>
-                                    <td><button id="cmd_next">Next</button></td>
+                                    <td><button id="cmd_step">Step</button></td>
                                     <td><button id="cmd_scores">Scores</button></td>
                                     <td><button id="lt">&lt;</button></td>
                                     <td><button id="gt">&gt;</button></td>
@@ -1157,4 +1280,3 @@
     </body>
 </html>
 -->
-

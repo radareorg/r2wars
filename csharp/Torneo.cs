@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,226 +10,328 @@ namespace r2warsTorneo
 {
     public class Torneo
     {
-        static List<TournamentTeam> teams = new List<TournamentTeam>();
-        static List<TournamentRound> rounds = new List<TournamentRound>();
-        static Dictionary<long, string> teamNames = new Dictionary<long, string>();
-        static Dictionary<long, string> teamWarriors = new Dictionary<long, string>();
-        static r2wars r2w = null;
+        static readonly List<TournamentTeam> teams = new List<TournamentTeam>();
+        static readonly List<TournamentRound> rounds = new List<TournamentRound>();
+        static readonly Dictionary<long, string> teamNames = new Dictionary<long, string>();
+        static readonly Dictionary<long, string> teamWarriors = new Dictionary<long, string>();
+        static r2wars r2w;
+
+        readonly object lifecycleLock = new object();
+        readonly object stateLock = new object();
+        readonly List<TournamentPairing> allcombats = new List<TournamentPairing>();
+        readonly TournamentTeamScore[] actualcombatscore = { null, null };
+        readonly string[] actualcombatnames = { "", "" };
+        readonly string[] actualcombatwarriors = { "", "" };
 
         RoundRobinPairingsGenerator generator;
-        List<TournamentPairing> allcombats = new List<TournamentPairing>();
-        TournamentTeamScore[] actualcombatscore = { null, null };
-        //clsEngine.eArch tournamenArch = clsEngine.eArch.x86;
-        Task tournamentTask = null;
-        int ncombat = 0;
-        string[] actualcombatnames = { "", "" };
-        string[] actualcombatwarriors = { "", "" };
-        string fullCombatLog ="";
+        Task tournamentTask;
+        string[] loadedWarriors = new string[0];
+        string loadedArchitecture = "mixed";
+        string loadedExtension = ".asm";
+        string fullCombatLog = "";
         string actualCombatLog = "";
         string actualDeadReason = "";
         string warriorsDirectory = "warriors";
-        bool bTournamenTask = false;
-        public bool bCombatEnd = true;
-        public bool bWaitToResumeTournament = false;
-        bool bTournamentRun = false;
+        string workflow = "idle";
+        string workflowMessage = "Load warriors to begin.";
+        string scores = "No tournament loaded.";
+        int ncombat;
+        volatile bool tournamentActive;
+        volatile bool tournamentAutoRun;
+        public volatile bool bCombatEnd = true;
 
         public Torneo()
         {
             r2w = r2warsStatic.r2w;
+            r2w.Event_combatEnd += new MyHandler1(CombatEnd);
+            r2w.Event_roundEnd += new MyHandler1(RoundEnd);
+            r2w.Event_roundExhausted += new MyHandler1(RoundExhausted);
         }
-        public void SetWarriorsDirectory(string wd) {
-            this.warriorsDirectory = wd;
-        }
-        private void espera(int veces, int pausa = 1)
+
+        public void SetWarriorsDirectory(string wd)
         {
-            Task t = Task.Factory.StartNew(() =>
+            warriorsDirectory = wd;
+        }
+
+        void SendDrawEvent(string value)
+        {
+            r2w.send_draw_event(value);
+        }
+
+        void SetWorkflow(string value, string message)
+        {
+            lock (stateLock)
             {
-                /*int n = veces;
-                while ((n--) > 0)
-                {
-                    System.Threading.Thread.Sleep(pausa);
-                }*/
-                System.Threading.Thread.Sleep(veces);
-            });
-            t.Wait();
+                workflow = value;
+                workflowMessage = message;
+            }
         }
-        void SendDrawEvent(string str)
+
+        string BuildStateJson(string console, string summary)
         {
-            r2w.send_draw_event(str);
+            lock (stateLock)
+            {
+                StringBuilder json = new StringBuilder();
+                json.Append("{\"workflow\":").Append(JsonUtil.Quote(workflow));
+                json.Append(",\"message\":").Append(JsonUtil.Quote(workflowMessage));
+                json.Append(",\"status\":").Append(JsonUtil.Quote(workflowMessage));
+                json.Append(",\"scores\":").Append(JsonUtil.Quote(scores));
+                json.Append(",\"completedCombats\":").Append(ncombat);
+                json.Append(",\"totalCombats\":").Append(allcombats.Count);
+                if (console != null)
+                    json.Append(",\"console\":").Append(JsonUtil.Quote(console));
+                if (summary != null)
+                    json.Append(",\"summary\":").Append(JsonUtil.Quote(summary));
+                json.Append("}");
+                return json.ToString();
+            }
         }
+
+        public string GetStateJson()
+        {
+            return BuildStateJson(null, null);
+        }
+
+        void SendState(string console = null, string summary = null)
+        {
+            SendDrawEvent(BuildStateJson(console, summary));
+        }
+
+        string BuildScores()
+        {
+            if (generator == null || teams.Count < 2)
+                return "No scores yet.";
+
+            StringBuilder result = new StringBuilder();
+            result.Append("STANDINGS — ").Append(ncombat).Append(" / ").Append(allcombats.Count).Append(" battles complete\n\n");
+            result.Append("RANK  WARRIOR                       RESULTS\n");
+            result.Append("----  ----------------------------  -----------------------------------------\n");
+            try
+            {
+                foreach (TournamentRanking standing in generator.GenerateRankings())
+                {
+                    string name = teamNames[standing.Team.TeamId];
+                    if (name.Length > 28)
+                        name = name.Substring(0, 25) + "...";
+                    result.Append(standing.Rank.ToString().PadLeft(4)).Append("  ");
+                    result.Append(name.PadRight(28)).Append("  ");
+                    result.Append(standing.ScoreDescription).Append("\n");
+                }
+            }
+            catch (InvalidTournamentStateException)
+            {
+                result.Append("Standings are being initialized.\n");
+            }
+            return result.ToString().TrimEnd();
+        }
+
         private void RoundEnd(object sender, MyEvent e)
         {
-            int nround = e.round + 1;
-            fullCombatLog += "    Round-" + nround.ToString() + " " + e.winnername + " Wins Cycles:" + e.ciclos.ToString() + "\\n";
-            fullCombatLog += "     Dead Reason     : " + e.loserreason + "\\n";
-            fullCombatLog += "     Dead Instruction: " + e.loserins + "\\n";
+            if (!tournamentActive)
+                return;
+            int round = e.round + 1;
+            string roundResult = "    Round " + round + ": " + e.winnername + " wins (" + e.ciclos + " cycles)\n" +
+                "      Defeat reason: " + e.loserreason + "\n" +
+                "      Instruction: " + e.loserins + "\n";
+            fullCombatLog += roundResult;
+            actualCombatLog += roundResult;
+            actualDeadReason += "Round " + round + " winner: " + e.winnername + "\n" +
+                "  Defeated: " + e.losername + "\n" +
+                "  Reason: " + e.loserreason + "\n" +
+                "  Instruction: " + e.loserins + "\n\n";
 
-            actualCombatLog += "    Round-" + nround.ToString() + " " + e.winnername + " Wins Cycles:" + e.ciclos.ToString() + "\\n";
-            actualCombatLog += "     Dead Reason     : " + e.loserreason  + "\\n";
-            actualCombatLog += "     Dead Instruction: " + e.loserins + "\\n";
+            if (e.ganador >= 0 && e.ganador < actualcombatscore.Length && actualcombatscore[e.ganador] != null)
+                actualcombatscore[e.ganador].Score += new HighestPointsScore(1);
 
-            actualDeadReason += " Round-" + nround.ToString() + " Winner: " + e.winnername + "\\n";
-            actualDeadReason += "  Looser     : " + e.losername + "\\n";
-            actualDeadReason += "  Dead Reason: " + e.loserreason + "\\n";
-            actualDeadReason += "  Dead Ins   : " + e.loserins + "\\n\\n";
-
-            if (actualcombatscore[e.ganador].Score!=null)
-                actualcombatscore[e.ganador].Score+= new HighestPointsScore(1);
-            string s = "{\"console\":\"" + actualCombatLog + "\"}";
-            SendDrawEvent(s);
+            scores = BuildScores();
+            SendState(actualCombatLog);
         }
+
         private void RoundExhausted(object sender, MyEvent e)
         {
-            int nround = e.round + 1;
-            actualCombatLog += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() +"\\n";
-            fullCombatLog   += "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + "\\n";
-            actualDeadReason+= "    Round-" + nround.ToString() + " TIMEOUT Cycles:" + e.ciclos.ToString() + "\\n";
-            string s = "{\"console\":\"" + actualCombatLog + "\"}";
-            SendDrawEvent(s);
+            if (!tournamentActive)
+                return;
+            int round = e.round + 1;
+            string timeout = "    Round " + round + ": timeout (" + e.ciclos + " cycles)\n";
+            actualCombatLog += timeout;
+            fullCombatLog += timeout;
+            actualDeadReason += timeout;
+            SendState(actualCombatLog);
         }
-        string getstats()
-        {
-            string stats = string.Format("Combat {0} / {1}", ncombat, allcombats.Count) + "\\n";
-            var standings = generator.GenerateRankings();
-            int n = 0;
-            string salida = "";
-            foreach (var standing in standings)
-            {
-                if (n == 0)
-                    salida = "<font style='color:yellow'>";
-                else
-                    salida = "";
-                salida += string.Format("{0} {1} {2}", standing.Rank.ToString(), teamNames[standing.Team.TeamId], standing.ScoreDescription);
-                if (n == 2)
-                    salida += "</font>";
 
-                stats += salida + "\\n";
-                n++;
-            }
-            return "{\"scores\":\"" + stats + "\",\"console\":\"" + actualCombatLog + "\"}";
-        }
         private void CombatEnd(object sender, MyEvent e)
         {
-            string ganador = e.winnername;
-            int ciclos = e.ciclos;
-            actualCombatLog += "Combat Winner: " + ganador + "\\n";
-            fullCombatLog += "Combat Winner: " + ganador + "\\n";
+            if (!tournamentActive)
+                return;
+            actualCombatLog += "Battle winner: " + e.winnername + "\n";
+            fullCombatLog += "Battle winner: " + e.winnername + "\n";
+            actualDeadReason += "Winner: " + e.winnername + "\n";
             ncombat++;
-            SendDrawEvent(getstats());
-            actualDeadReason += "Winner: " + ganador + "\\n";
-            string s = "{\"infodead\":\"" + actualDeadReason + "\"}";
-            SendDrawEvent(s);
+            bCombatEnd = true;
+            scores = BuildScores();
 
-            r2warsStatic.r2w.sync_var = false;
-
-
-            Console.WriteLine("Showing Summary ....");
-            while (r2warsStatic.r2w.sync_var == false)
+            if (ncombat >= allcombats.Count)
             {
-                SendDrawEvent("on");
-                //Thread.Sleep(200);
-                espera(200);
+                FinishTournament();
+                return;
             }
-            //espera(3000);
-            espera(6000);
 
-            r2warsStatic.r2w.sync_var = false;
-            while (r2warsStatic.r2w.sync_var == false)
+            if (!tournamentAutoRun || r2w.bStopAtRoundStart)
             {
-                SendDrawEvent("off");
-                //Thread.Sleep(200);
-                espera(200);
+                tournamentAutoRun = false;
+                SetWorkflow("paused", "Battle complete. Resume for the next battle, or Step through it one cycle at a time.");
             }
-            Console.WriteLine("Hidding Summary ....");
-            r2warsStatic.r2w.sync_var = false;
-            if (r2w.bStopAtRoundStart == false)
-                bCombatEnd = true;
             else
-                bWaitToResumeTournament = true;
+            {
+                SetWorkflow("running", "Battle complete. Starting the next battle…");
+            }
+            SendState(actualCombatLog, actualDeadReason);
         }
-        void runnextcombat()
+
+        bool PrepareNextCombat(bool autoStart)
         {
-            if (ncombat < allcombats.Count)
+            lock (lifecycleLock)
             {
-                int j = 0;
-                foreach (var teamScore in allcombats[ncombat].TeamScores)
+                if (!tournamentActive || !bCombatEnd || ncombat >= allcombats.Count)
+                    return false;
+
+                int player = 0;
+                foreach (TournamentTeamScore teamScore in allcombats[ncombat].TeamScores)
                 {
-                    actualcombatnames[j] = teamNames[teamScore.Team.TeamId];
-                    actualcombatwarriors[j] = teamWarriors[teamScore.Team.TeamId];
-                    actualcombatscore[j] = teamScore;
-                    actualcombatscore[j].Score += new HighestPointsScore(0);
-                    j++;
+                    actualcombatnames[player] = teamNames[teamScore.Team.TeamId];
+                    actualcombatwarriors[player] = teamWarriors[teamScore.Team.TeamId];
+                    actualcombatscore[player] = teamScore;
+                    actualcombatscore[player].Score += new HighestPointsScore(0);
+                    player++;
                 }
-                string tmp = string.Format("Combat initialized {0} {1} vs {2}", ncombat + 1, actualcombatnames[0], actualcombatnames[1]);
-                actualCombatLog = tmp + "\\n";
-                actualDeadReason = string.Format("{0} vs {1}\\n\\n", actualcombatnames[0], actualcombatnames[1]);
-                fullCombatLog += tmp + "\\n";
+
+                actualCombatLog = "Battle " + (ncombat + 1) + " / " + allcombats.Count + ": " +
+                    actualcombatnames[0] + " vs " + actualcombatnames[1] + "\n";
+                actualDeadReason = actualcombatnames[0] + " vs " + actualcombatnames[1] + "\n\n";
+                fullCombatLog += actualCombatLog;
                 bCombatEnd = false;
-                string s = "{\"console\":\"" + actualCombatLog + "\"}";
-                SendDrawEvent(s);
-                r2w.playcombat(actualcombatwarriors[0], actualcombatwarriors[1], actualcombatnames[0], actualcombatnames[1], false);
-            }
-            else
-            {
-                fullCombatLog += "Tournament end " + DateTime.Now + "\\n";
-                bTournamentRun = false;
-                string j = getstats().Replace("scores", "infodead").Replace("}", "");
-                string s = ",\"console\":\"" + fullCombatLog + "\"}";
-                j += s;
-                // al ser el final del torneo imprimimos en el resumen la clasificacion final 
-                SendDrawEvent(j);
-                r2warsStatic.r2w.sync_var = false;
-                Console.WriteLine("Showing Final Result.");
-                while (r2warsStatic.r2w.sync_var == false)
-                {
-                    SendDrawEvent("on");
-                    espera(200);
-                    //Thread.Sleep(200);
-                }
 
-                // generamos el fichero de info
-                string filename = "";
-                filename = string.Format("{0}.r2wars.txt", DateTime.Now.ToString().Replace("/","-").Replace(":","-"));
-                using (StreamWriter sw = File.CreateText(filename))
-                {
-                    sw.WriteLine("RANKING");
-                    sw.WriteLine("==============");
-                    string stats = string.Format("Combat {0} / {1}", ncombat, allcombats.Count) + Environment.NewLine+ Environment.NewLine;
-                    var standings = generator.GenerateRankings();
-                    foreach (var standing in standings)
-                    {
-                        string salida = string.Format("{0} {1} {2}", standing.Rank.ToString(), teamNames[standing.Team.TeamId], standing.ScoreDescription);
-                        stats += salida + Environment.NewLine;
-                    }
-                    sw.Write(stats);
-                    sw.WriteLine("");
-                    sw.WriteLine("FULL LOG");
-                    sw.WriteLine("==============");
-                    sw.Write(fullCombatLog.Replace("\\n", Environment.NewLine));
-                }
+                if (autoStart)
+                    SetWorkflow("running", "Battle " + (ncombat + 1) + " / " + allcombats.Count + " is running.");
+                else
+                    SetWorkflow("paused", "Battle " + (ncombat + 1) + " / " + allcombats.Count + " is ready. Step advances one cycle; Resume runs continuously.");
+                SendState(actualCombatLog);
 
+                bool initialized = r2w.playcombat(
+                    actualcombatwarriors[0], actualcombatwarriors[1],
+                    actualcombatnames[0], actualcombatnames[1], false, autoStart);
+                if (!initialized)
+                {
+                    bCombatEnd = true;
+                    tournamentAutoRun = false;
+                    SetWorkflow("paused", "The battle could not be initialized. Check the warrior files, then reload them.");
+                    SendState();
+                }
+                return initialized;
             }
         }
+
+        void FinishTournament()
+        {
+            lock (lifecycleLock)
+            {
+                if (workflow == "finished")
+                    return;
+                tournamentAutoRun = false;
+                tournamentActive = false;
+                bCombatEnd = true;
+                fullCombatLog += "Tournament finished " + DateTime.Now + "\n";
+                scores = BuildScores();
+                SetWorkflow("finished", "Tournament complete. Review the final standings or choose Play again to reset all scores.");
+                SendState(fullCombatLog, scores + "\n\nLAST BATTLE\n\n" + actualDeadReason);
+                SaveTournamentReport();
+            }
+        }
+
+        void SaveTournamentReport()
+        {
+            try
+            {
+                string filename = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".r2wars.txt";
+                using (StreamWriter writer = File.CreateText(filename))
+                {
+                    writer.WriteLine(scores);
+                    writer.WriteLine();
+                    writer.WriteLine("FULL LOG");
+                    writer.WriteLine("========");
+                    writer.Write(fullCombatLog);
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine("Could not save tournament report: " + exception.Message);
+            }
+        }
+
+        void TournamentLoop()
+        {
+            while (tournamentActive)
+            {
+                if (tournamentAutoRun && bCombatEnd)
+                    PrepareNextCombat(true);
+                else
+                    Thread.Sleep(50);
+            }
+        }
+
+        bool BeginTournament()
+        {
+            if (allcombats.Count == 0 || loadedWarriors.Length < 2)
+            {
+                SetWorkflow("idle", "At least two warriors must be loaded before starting a tournament.");
+                SendState();
+                return false;
+            }
+            if (workflow == "finished")
+            {
+                SetWorkflow("finished", "This tournament is complete. Choose Play again to reset the scores first.");
+                SendState();
+                return false;
+            }
+            if (tournamentActive)
+                return true;
+
+            fullCombatLog = "Tournament started " + DateTime.Now + "\n";
+            tournamentActive = true;
+            bCombatEnd = true;
+            tournamentTask = Task.Factory.StartNew(TournamentLoop);
+            return true;
+        }
+
         public void StopTournament()
         {
-            while (bTournamenTask == true)
+            tournamentAutoRun = false;
+            tournamentActive = false;
+            lock (lifecycleLock)
             {
-                bTournamentRun = false;
+                r2w.CancelCombat();
                 bCombatEnd = true;
-                Thread.Sleep(100);
             }
-            r2w.StopCombate();
+            Task task = tournamentTask;
+            if (task != null && !task.IsCompleted)
+                task.Wait(2000);
         }
+
         public string getemptymemory()
         {
-            string res = "";
-            for (int x = 0; x < 1024; x++)
-                res += "\"\"" + ",";
-            res = res.Remove(res.Length - 1);
-            return res;
+            StringBuilder memory = new StringBuilder();
+            for (int index = 0; index < 1024; index++)
+            {
+                if (index > 0)
+                    memory.Append(',');
+                memory.Append("\"\"");
+            }
+            return memory.ToString();
         }
-        private void dopairs(string[] selectedfiles, string strarch, string extension)
+
+        private void CreatePairings(string[] selectedfiles, string architecture, string extension)
         {
+            r2w.ClearHistory();
             allcombats.Clear();
             teamNames.Clear();
             teamWarriors.Clear();
@@ -236,145 +339,177 @@ namespace r2warsTorneo
             teams.Clear();
             ncombat = 0;
             fullCombatLog = "";
+            actualCombatLog = "";
+            actualDeadReason = "";
+            loadedWarriors = (string[])selectedfiles.Clone();
+            loadedArchitecture = architecture;
+            loadedExtension = extension;
             generator = new RoundRobinPairingsGenerator();
             generator.Reset();
-            int n = 0;
-            foreach (string s in selectedfiles)
+
+            for (int index = 0; index < selectedfiles.Length; index++)
             {
-                var team = new TournamentTeam(n, 0);
+                TournamentTeam team = new TournamentTeam(index, 0);
                 teams.Add(team);
-                string tmp = Path.GetFileName(selectedfiles[n]);
-                teamNames.Add(n, tmp.Substring(0, tmp.IndexOf(extension)));
-                teamWarriors.Add(n, selectedfiles[n]);
-                n++;
+                string filename = Path.GetFileName(selectedfiles[index]);
+                string name = filename.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
+                    ? filename.Substring(0, filename.Length - extension.Length)
+                    : filename;
+                teamNames.Add(index, name);
+                teamWarriors.Add(index, selectedfiles[index]);
             }
+
             while (true)
             {
-                TournamentRound round = null;
                 generator.Reset();
                 generator.LoadState(teams, rounds);
-                round = generator.CreateNextRound(null);
-                if (round != null)
-                {
-                    rounds.Add(round);
-                }
-                else
-                {
+                TournamentRound round = generator.CreateNextRound(null);
+                if (round == null)
                     break;
-                }
+                rounds.Add(round);
             }
             foreach (TournamentRound round in rounds)
-            {
-                foreach (var pairing in round.Pairings)
-                {
+                foreach (TournamentPairing pairing in round.Pairings)
                     allcombats.Add(pairing);
-                }
-            }
-            string memoria = getemptymemory();
-            string salida = "";
-            salida = "Tournament arch: " + strarch + "\nTotal Warriors loaded " + selectedfiles.Count().ToString();
-            if (selectedfiles.Count() < 2)
+
+            string console = "Tournament architecture: " + architecture + "\n" +
+                "Warriors directory: " + warriorsDirectory + "\n" +
+                "Loaded warriors (" + selectedfiles.Length + "):";
+            foreach (string warrior in selectedfiles)
+                console += "\n  • " + Path.GetFileName(warrior);
+
+            if (selectedfiles.Length < 2)
             {
-                salida += "\nCannot begin Tournament with only one Warrior!";
+                scores = "No tournament loaded.";
+                SetWorkflow("idle", "At least two .asm warriors are required. Add warriors, then load again.");
+                console += "\n\nAt least two warriors are required to start a tournament.";
             }
             else
             {
-                salida += "\nPress 'start' button to begin Tournament.";
+                scores = BuildScores();
+                SetWorkflow("ready", selectedfiles.Length + " warriors loaded for " + allcombats.Count + " battles. Start the tournament when ready.");
+                console += "\n\nReady for " + allcombats.Count + " round-robin battles.";
             }
-            string envio = "{\"player1\":{\"regs\":\" \",\"code\":\" \",\"name\":\"Player - 1\"},\"player2\":{\"regs\":\" \",\"code\":\" \",\"name\":\"Player - 2\"},\"memory\":[" + memoria + "],\"console\":\"" + salida + "\",\"status\":\"Warriors Loaded.\",\"scores\":\" \"}";
-            SendDrawEvent(envio.Replace("\n", "\\n").Replace("\r", ""));
 
+            string resetDisplay = "{\"player1\":{\"regs\":\"\",\"code\":\"\",\"name\":\"Player 1\"}," +
+                "\"player2\":{\"regs\":\"\",\"code\":\"\",\"name\":\"Player 2\"}," +
+                "\"memory\":[" + getemptymemory() + "],\"activePlayer\":-1," +
+                "\"historyPosition\":0,\"historyCount\":0,\"canBrowseEarlier\":false,\"canBrowseLater\":false}";
+            SendDrawEvent(resetDisplay);
+            SendState(console);
         }
+
         public void LoadTournamentPlayers()
         {
             StopTournament();
-            if (bTournamentRun == false)
+            string[] files;
+            try
             {
-                if (r2w != null)
-                {
-                    r2w.Event_combatEnd -= new MyHandler1(CombatEnd);
-                    r2w.Event_combatEnd += new MyHandler1(CombatEnd);
-
-                    r2w.Event_roundEnd -= new MyHandler1(RoundEnd);
-                    r2w.Event_roundEnd += new MyHandler1(RoundEnd);
-
-                    r2w.Event_roundExhausted -= new MyHandler1(RoundExhausted);
-                    r2w.Event_roundExhausted += new MyHandler1(RoundExhausted);
-                }
-                string noWarriors = "Warriors not found. Please copy '.x86-32' or '.arm-32' warriors inside 'warriors' folder.";
-                string[] files = new string[] { };
-                try
-                {
-                    files = Directory.GetFiles(warriorsDirectory);
-                }
-                catch
-                {
-                    SendDrawEvent("nowarriors");
-                    Console.WriteLine(noWarriors);
-                    return;
-                }
-
-                string[] selectedfiles = files.Where(p => p.EndsWith(".asm")).ToArray();
-                string extension = ".asm";
-                string strarch = "mixed";
-                dopairs(selectedfiles, strarch, extension);
-            }  
+                files = Directory.GetFiles(warriorsDirectory)
+                    .Where(path => path.EndsWith(".asm", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
+            catch (Exception exception)
+            {
+                loadedWarriors = new string[0];
+                scores = "No tournament loaded.";
+                SetWorkflow("idle", "The warriors directory could not be read: " + exception.Message);
+                SendDrawEvent("nowarriors");
+                SendState();
+                return;
+            }
+            CreatePairings(files, "mixed (detected from each filename)", ".asm");
         }
+
+        public void ResetTournament()
+        {
+            StopTournament();
+            if (loadedWarriors.Length < 2)
+            {
+                LoadTournamentPlayers();
+                return;
+            }
+            CreatePairings(loadedWarriors, loadedArchitecture, loadedExtension);
+        }
+
         public void StopActualCombat()
         {
-            r2w.StopCombate();
+            if (workflow != "running")
+                return;
+            tournamentAutoRun = false;
+            lock (lifecycleLock)
+                r2w.StopCombate();
+            if (workflow != "finished")
+            {
+                SetWorkflow("paused", "Paused. Resume continuous play or Step exactly one cycle.");
+                SendState();
+            }
         }
+
         public void StepTournamentCombats()
         {
-            if (bWaitToResumeTournament)
-            {
-                bWaitToResumeTournament = false;
-                bCombatEnd = true;
-            }
-            else if (bTournamentRun == false)
-            {
-                RunTournamentCombats();
-               // r2w.bInCombat = true;
-            }
-            else if (r2w.bThreadIni == false)
-            {
-                
+            if (workflow != "paused")
+                return;
+            if (!BeginTournament())
+                return;
+
+            tournamentAutoRun = false;
+            if (bCombatEnd && !PrepareNextCombat(false))
+                return;
+            if (!r2w.bThreadIni && r2w.bInCombat)
                 r2w.stepCombate();
+            if (workflow != "finished")
+            {
+                SetWorkflow("paused", "Paused after one cycle. Step again or Resume continuous play.");
+                SendState();
             }
         }
+
         public void RunTournamentCombats()
         {
-            if (bWaitToResumeTournament)
-            {
-                bWaitToResumeTournament = false;
-                bCombatEnd = true;
-            }
-            else if (bTournamentRun == false)
-            {
-                fullCombatLog = "Tournament start " + DateTime.Now + "\\n";
-                bTournamentRun = true;
-                tournamentTask = Task.Factory.StartNew(() =>
-                {
-             
-                    bTournamenTask = true;
-                    System.Diagnostics.Debug.WriteLine("TournamenTask: Ini.");
-                    while (bTournamentRun)
-                    {
-                        if (bCombatEnd == true)
-                        {
-                            runnextcombat();
-                        }
-                        else
-                        {
-                            Thread.Sleep(100);
-                        }
-                    }
-                    bTournamenTask = false;
-                    System.Diagnostics.Debug.WriteLine("TournamenTask: Fin.");
-                });
-            }
-            else if (r2w.bThreadIni == false)
+            if (workflow != "ready" && workflow != "paused")
+                return;
+            if (!BeginTournament())
+                return;
+
+            tournamentAutoRun = true;
+            SetWorkflow("running", "Tournament running. Pause at any time to inspect or step.");
+            SendState();
+            if (!bCombatEnd && r2w.bInCombat && !r2w.bThreadIni)
                 r2w.iniciaCombate();
+        }
+    }
+
+    internal static class JsonUtil
+    {
+        public static string Quote(string value)
+        {
+            if (value == null)
+                return "null";
+            StringBuilder result = new StringBuilder(value.Length + 2);
+            result.Append('"');
+            foreach (char character in value)
+            {
+                switch (character)
+                {
+                    case '"': result.Append("\\\""); break;
+                    case '\\': result.Append("\\\\"); break;
+                    case '\b': result.Append("\\b"); break;
+                    case '\f': result.Append("\\f"); break;
+                    case '\n': result.Append("\\n"); break;
+                    case '\r': result.Append("\\r"); break;
+                    case '\t': result.Append("\\t"); break;
+                    default:
+                        if (character < 32)
+                            result.Append("\\u").Append(((int)character).ToString("x4"));
+                        else
+                            result.Append(character);
+                        break;
+                }
+            }
+            result.Append('"');
+            return result.ToString();
         }
     }
 }

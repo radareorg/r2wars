@@ -4,22 +4,30 @@ namespace r2warsTorneo
 {
     public class r2warsWebSocket : WebSocketBehavior
     {
-        static MyHandler1 h1;
+        MyHandler1 h1;
         protected override void OnMessage(MessageEventArgs e)
         {
             string recv = e.Data;
             string msg = "";
-            if (recv == "cmd_prevlog")
+            if (recv == "cmd_state")
             {
-                r2warsStatic.r2w.prevLog();
+                msg = r2warsStatic.torneo.GetStateJson();
+            }
+            else if (recv == "cmd_prevlog")
+            {
+                msg = r2warsStatic.r2w.prevLog();
             }
             else if (recv == "cmd_nextlog")
             {
-                r2warsStatic.r2w.nextLog();
+                msg = r2warsStatic.r2w.nextLog();
             }
             else if (recv == "cmd_load")
             {
                 r2warsStatic.torneo.LoadTournamentPlayers();
+            }
+            else if (recv == "cmd_reset")
+            {
+                r2warsStatic.torneo.ResetTournament();
             }
             else if (recv == "cmd_run")
             {
@@ -29,7 +37,7 @@ namespace r2warsTorneo
             {
                 r2warsStatic.torneo.StopActualCombat();
             }
-            else if (recv == "cmd_next")
+            else if (recv == "cmd_step" || recv == "cmd_next")
             {
                 r2warsStatic.torneo.StepTournamentCombats();
             }
@@ -77,14 +85,15 @@ namespace r2warsTorneo
 
         protected override void OnClose(CloseEventArgs e)
         {
-            r2warsStatic.r2w.Event_draw -= h1;
+            if (h1 != null)
+                r2warsStatic.r2w.Event_draw -= h1;
             base.OnClose(e);
         }
         protected override void OnOpen()
         {
-            //r2warsStatic.r2w.Event_draw -= h1;
             h1 = new MyHandler1(R2wars_EventPinta);
             r2warsStatic.r2w.Event_draw += h1;
+            Send(r2warsStatic.torneo.GetStateJson());
             base.OnOpen();
         }
     }

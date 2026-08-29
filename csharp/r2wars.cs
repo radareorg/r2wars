@@ -34,6 +34,18 @@ namespace r2warsTorneo
     public class r2wars
     {
         private const int MAX_CYCLES = 2000;
+        private const int MAX_HISTORY_STATES = 2048;
+        private sealed class UiHistoryEntry
+        {
+            public string Regs1;
+            public string Code1;
+            public string Regs2;
+            public string Code2;
+            public string Memory;
+            public string Status;
+            public int ActivePlayer;
+        }
+
         public clsEngine Engine = null;
         public bool bThreadIni = false;
         public bool bStopProcess = false;
@@ -51,8 +63,10 @@ namespace r2warsTorneo
         string[] cWrite = { "v", "o" };
         string[] rr = { "", "" };
         string[] dd = { "", "" };
-        string[] mm = { "", "" };
         string[] memoria = new string[1024];
+        readonly object historyLock = new object();
+        readonly List<UiHistoryEntry> uiHistory = new List<UiHistoryEntry>();
+        int historyIndex = -1;
         string status = "Idle";
         int[] victorias = { 0, 0 };
         int totalciclos = 0;
@@ -91,19 +105,103 @@ namespace r2warsTorneo
             }
             e1 = null;
         }
-        string json_output(int nPlayerLog = -1)
+        string json_output(UiHistoryEntry historyEntry = null)
         {
             string username1 = Engine.GetUserName(0);
             string username2 = Engine.GetUserName(1);
-            string memoria = "";
-            if (nPlayerLog!=-1)
+            string regs1;
+            string code1;
+            string regs2;
+            string code2;
+            string memory;
+            string outputStatus;
+            int activePlayer;
+            int historyPosition;
+            int historyCount;
+            bool canBrowseEarlier;
+            bool canBrowseLater;
+
+            if (historyEntry == null)
             {
-                memoria = mm[nPlayerLog];
+                lock (rr)
+                {
+                    regs1 = rr[0];
+                    regs2 = rr[1];
+                }
+                lock (dd)
+                {
+                    code1 = dd[0];
+                    code2 = dd[1];
+                }
+                memory = getmemoria();
+                outputStatus = status;
+                activePlayer = Engine != null && bInCombat ? Engine.thisplayer : -1;
             }
             else
-                memoria = getmemoria();
-            string salida = "{\"player1\":{\"regs\":\"" + rr[0].Replace("\n", "\\n") + "\",\"code\":\"" + dd[0].Replace("\n", "\\n") + "\",\"name\":\"" + username1 + "\"},\"player2\":{\"regs\":\"" + rr[1].Replace("\n", "\\n") + "\",\"code\":\"" + dd[1].Replace("\n", "\\n") + "\",\"name\":\"" + username2 + "\"},\"memory\":[" + memoria + "], \"status\":\"" + status + "\"}";//,\"scores\":\"" + clasi + "\"}";
+            {
+                regs1 = historyEntry.Regs1;
+                code1 = historyEntry.Code1;
+                regs2 = historyEntry.Regs2;
+                code2 = historyEntry.Code2;
+                memory = historyEntry.Memory;
+                outputStatus = historyEntry.Status;
+                activePlayer = historyEntry.ActivePlayer;
+            }
+
+            lock (historyLock)
+            {
+                historyCount = uiHistory.Count;
+                historyPosition = historyIndex >= 0 ? historyIndex + 1 : 0;
+                canBrowseEarlier = historyIndex > 0;
+                canBrowseLater = historyIndex >= 0 && historyIndex < uiHistory.Count - 1;
+            }
+            if (historyEntry != null)
+            {
+                string location = historyPosition == historyCount ? "Latest state" :
+                    "History " + historyPosition + " / " + historyCount;
+                outputStatus = location + " — " + outputStatus;
+            }
+
+            string salida = "{\"player1\":{\"regs\":" + JsonUtil.Quote(regs1) + ",\"code\":" + JsonUtil.Quote(code1) + ",\"name\":" + JsonUtil.Quote(username1) + "}," +
+                "\"player2\":{\"regs\":" + JsonUtil.Quote(regs2) + ",\"code\":" + JsonUtil.Quote(code2) + ",\"name\":" + JsonUtil.Quote(username2) + "}," +
+                "\"memory\":[" + memory + "],\"status\":" + JsonUtil.Quote(outputStatus) + ",\"activePlayer\":" + activePlayer.ToString() +
+                ",\"historyPosition\":" + historyPosition.ToString() + ",\"historyCount\":" + historyCount.ToString() +
+                ",\"canBrowseEarlier\":" + (canBrowseEarlier ? "true" : "false") +
+                ",\"canBrowseLater\":" + (canBrowseLater ? "true" : "false") + "}";
             return salida;
+        }
+        private void PublishCurrentState()
+        {
+            UiHistoryEntry entry = new UiHistoryEntry();
+            lock (rr)
+            {
+                entry.Regs1 = rr[0];
+                entry.Regs2 = rr[1];
+            }
+            lock (dd)
+            {
+                entry.Code1 = dd[0];
+                entry.Code2 = dd[1];
+            }
+            entry.Memory = getmemoria();
+            entry.Status = status;
+            entry.ActivePlayer = Engine != null && bInCombat ? Engine.thisplayer : -1;
+            lock (historyLock)
+            {
+                uiHistory.Add(entry);
+                if (uiHistory.Count > MAX_HISTORY_STATES)
+                    uiHistory.RemoveAt(0);
+                historyIndex = uiHistory.Count - 1;
+            }
+            send_draw_event(json_output());
+        }
+        public void ClearHistory()
+        {
+            lock (historyLock)
+            {
+                uiHistory.Clear();
+                historyIndex = -1;
+            }
         }
         public void initmemoria()
         {
@@ -112,10 +210,13 @@ namespace r2warsTorneo
         }
         public string getmemoria()
         {
-            string salida = "";
-            for (int x = 0; x < 1024; x++)
-                salida += memoria[x] + ",";
-            return salida.Remove(salida.Length - 1);
+            lock (memoria)
+            {
+                string salida = "";
+                for (int x = 0; x < 1024; x++)
+                    salida += memoria[x] + ",";
+                return salida.Remove(salida.Length - 1);
+            }
 
         }
         void pinta(long offset, string c, string s)
@@ -143,7 +244,7 @@ namespace r2warsTorneo
             pinta(1023, "F");
             pinta(0, "F");
 
-            send_draw_event(json_output());
+            PublishCurrentState();
 
         }
         void pinta(int offset, string c)
@@ -167,21 +268,6 @@ namespace r2warsTorneo
         }
         void drawplayerturn(int nplayer)
         {
-        }
-        void drawslogcreen(int nplayer, clsinfo actual)
-        {
-            lock (dd)
-            {
-                dd[nplayer] = "Cycles:" + actual.cycles.ToString() + "\nActual Instruction: \n" + actual.ins + "\n\n" + actual.dasm;
-            }
-            lock (rr)
-            {
-                rr[nplayer] = actual.formatregs();
-            }
-            lock(mm)
-            {
-                mm[nplayer] = actual.txtmemoria;
-            }
         }
         string padlines(string t,int maxlen=54)
         {
@@ -277,9 +363,6 @@ namespace r2warsTorneo
             
             if (bDead)
             {
-                // Dibujamos la info del jugador que relizo la instruccion de muerte
-                clsinfo ins = Engine.players[Engine.thisplayer].logGetPrev();
-                //drawslogcreen(Engine.thisplayer, ins);
                 drawplayerturn(Engine.thisplayer);
             }
             else
@@ -296,7 +379,7 @@ namespace r2warsTorneo
                 // Dibujamos los accesos a memoria
                 drawmemaccess(Engine.thisplayer);
             }
-        send_draw_event(json_output());
+        PublishCurrentState();
         }
         private void RoundExhausted()
         {
@@ -339,6 +422,7 @@ namespace r2warsTorneo
         private void CombatEnd(bool empate=false)
         {
             Debug.WriteLine("CombatEnd::Invoked.");
+            status = "Battle complete";
             if (Event_combatEnd != null)
             {
                 MyEvent e1 = new MyEvent();
@@ -400,7 +484,7 @@ namespace r2warsTorneo
                     drawplayerturn(Engine.otherplayer);
                     drawscreen(Engine.thisplayer);
                     drawscreen(Engine.otherplayer);
-                    send_draw_event(json_output());
+                    PublishCurrentState();
                 }
                 
             }
@@ -410,13 +494,14 @@ namespace r2warsTorneo
                 drawplayerturn(Engine.otherplayer);
                 drawscreen(Engine.thisplayer);
                 drawscreen(Engine.otherplayer);
-                send_draw_event(json_output());
+                PublishCurrentState();
             }
             // here was have a pause on previous versions now its on send_draw_event
             Engine.switchUserIdx();
         }
         public bool iniciaJugadores(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2)
         {
+            ClearHistory();
             initmemoria();
             string res = Engine.Init(new string[] {
                                                rutaWarrior1,
@@ -455,6 +540,7 @@ namespace r2warsTorneo
         public void stepCombate()
         {
             Debug.WriteLine("r2wars:stepCombate");
+            status = "Paused — advanced 1 cycle";
             if (bInCombat)
             {
 
@@ -470,7 +556,7 @@ namespace r2warsTorneo
                         drawPC(Engine.otherplayer);
                         drawscreen(Engine.thisplayer);
                         drawscreen(Engine.otherplayer);
-                        send_draw_event(json_output());
+                        PublishCurrentState();
                         return;
                     }
 
@@ -522,9 +608,10 @@ namespace r2warsTorneo
         }
         public void iniciaCombate()
         {
+            status = "Running";
+            bThreadIni = true;
             gameLoopTask = Task.Factory.StartNew(() =>
             {
-                bThreadIni = true;
                 // Jugamos el combate mientras no hayan muertos
                 Debug.WriteLine("gameLoopTask: Ini.");
                 //int nexausted = 0;
@@ -551,7 +638,7 @@ namespace r2warsTorneo
                             drawPC(Engine.otherplayer);
                             drawscreen(Engine.thisplayer);
                             drawscreen(Engine.otherplayer);
-                            send_draw_event(json_output());
+                            PublishCurrentState();
                             if (bStopAtRoundEnd)
                             {
                                 bThreadIni = false;
@@ -617,7 +704,7 @@ namespace r2warsTorneo
                 Debug.WriteLine("gameLoopTask: Fin");
             });
         }
-        public bool playcombat(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, bool bSingleRound)
+        public bool playcombat(string rutaWarrior1, string rutaWarrior2, string nameWarrior1, string nameWarrior2, bool bSingleRound, bool autoStart)
         {
             if (iniciaJugadores(rutaWarrior1, rutaWarrior2, nameWarrior1, nameWarrior2))
             {
@@ -631,10 +718,12 @@ namespace r2warsTorneo
                 this.nExausted = 0;
                 this.bDead = false;
                 this.totalciclos = 0;
-                if (bStopAtRoundStart)
-                    send_draw_event(json_output());
-                else
+                status = autoStart ? "Running" : "Paused — ready to step";
+                PublishCurrentState();
+                if (autoStart)
+                {
                     iniciaCombate();
+                }
                 
                 return true;
             }
@@ -647,26 +736,40 @@ namespace r2warsTorneo
                 this.bStopProcess = true;
                 Thread.Sleep(100);
             }
+            if (bInCombat)
+                status = "Paused";
         }
-        public void prevLog()
+        public void CancelCombat()
         {
-            clsinfo tmp = Engine.players[1].logGetPrev();
-            if (tmp != null)
-                drawslogcreen(1, tmp);
-            tmp = Engine.players[0].logGetPrev();
-            if (tmp!=null)
-                drawslogcreen(0, tmp);
-            send_draw_event(json_output(0));
+            StopCombate();
+            bInCombat = false;
+            bStopProcess = false;
+            bThreadIni = false;
+            status = "Idle";
         }
-        public void nextLog()
+        public string prevLog()
         {
-            clsinfo tmp = Engine.players[1].logGetNext();
-            if (tmp != null)
-                drawslogcreen(1, tmp);
-            tmp = Engine.players[0].logGetNext();
-            if (tmp != null)
-                drawslogcreen(0, tmp);
-            send_draw_event(json_output(0));
+            UiHistoryEntry entry;
+            lock (historyLock)
+            {
+                if (historyIndex <= 0 || uiHistory.Count == 0)
+                    return "";
+                historyIndex--;
+                entry = uiHistory[historyIndex];
+            }
+            return json_output(entry);
+        }
+        public string nextLog()
+        {
+            UiHistoryEntry entry;
+            lock (historyLock)
+            {
+                if (historyIndex < 0 || historyIndex >= uiHistory.Count - 1)
+                    return "";
+                historyIndex++;
+                entry = uiHistory[historyIndex];
+            }
+            return json_output(entry);
         }
     }
 }

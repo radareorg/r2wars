@@ -23,6 +23,12 @@ namespace r2warsTorneo
             }
              var tokenSource = new CancellationTokenSource();
             CancellationToken ct = tokenSource.Token;
+            var shutdown = new ManualResetEvent(false);
+            Console.CancelKeyPress += (sender, eventArgs) =>
+            {
+                eventArgs.Cancel = true;
+                shutdown.Set();
+            };
             if (args.Length > 0) {
               r2warsStatic.torneo.SetWarriorsDirectory(args[0]);
             }
@@ -60,8 +66,10 @@ namespace r2warsTorneo
 
             taskA.Start();
             taskB.Start();
-            Console.ReadKey();
+            Console.WriteLine("Press Ctrl-C to stop r2wars.");
+            shutdown.WaitOne();
             tokenSource.Cancel();
+            Task.WaitAll(new Task[] { taskA, taskB }, 5000);
 
         }
     }
