@@ -38,6 +38,9 @@ from the M
 * .NET 10 SDK (to build) or ASP.NET Core Runtime 10 (to run a published build)
 * radare2
 
+The Docker image pins radare2 6.2.0 and installs the checksummed `amd64` or
+`arm64` package from the official GitHub release.
+
 Run the application from the repository root with:
 
     dotnet run --project csharp/r2wars.csproj -- warriors
