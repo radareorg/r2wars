@@ -47,6 +47,30 @@ Run the application from the repository root with:
 
 Then open `http://127.0.0.1:9664/`.
 
+## Browser-only WebAssembly build
+
+The `wasm/` application is an alternative execution path that runs the
+tournament and radare2 ESIL entirely inside the browser. It does not connect to
+Kestrel, WebSockets, Docker, or a locally installed copy of radare2.
+
+Build it from the repository root with:
+
+    make wasm-build
+
+The static application is written to `wasm/dist/`. During development, run:
+
+    make wasm-run
+
+The first build downloads the pinned, checksummed radare2 6.2.0 WASI API
+module. The generated static site includes that module and can be hosted by any
+static file host. After the site loads, warrior source and tournament state do
+not leave the browser.
+
+The browser build starts with three bundled example warriors. Use **Choose
+warriors** or drag two or more `.asm` files onto the page to run a different
+tournament. Architecture and bitness use the same filename convention as the
+.NET version.
+
 On Windows you need to have radare2.exe and rasm2.exe in the published
 application directory or in `PATH`.
 

@@ -1,0 +1,23 @@
+{
+  "name": "r2wars-wasm",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "fetch-r2": "node scripts/fetch-r2.mjs",
+    "prepare-index": "node scripts/prepare-index.mjs",
+    "dev": "npm run fetch-r2 && npm run prepare-index && vite",
+    "build": "npm run fetch-r2 && npm run prepare-index && tsc --noEmit && vite build",
+    "test": "npm run fetch-r2 && vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@bjorn3/browser_wasi_shim": "0.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "fflate": "0.8.3",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
+  }
+}

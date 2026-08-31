@@ -1,6 +1,6 @@
 DOCKER ?= docker
 
-.PHONY: default build start stop clean
+.PHONY: default build start stop clean wasm-build wasm-test wasm-run
 
 default: start ## By default, just start the container
 
@@ -22,3 +22,12 @@ clean: stop ## Remove the project containers and docker image
 	@if $(DOCKER) image inspect r2wars:latest >/dev/null 2>&1; then \
 		$(DOCKER) image rm r2wars:latest; \
 	fi
+
+wasm-build: ## Build the standalone browser/WebAssembly version
+	cd wasm && npm install && npm run build
+
+wasm-test: ## Test the browser engine against radare2 WebAssembly
+	cd wasm && npm install && npm test
+
+wasm-run: ## Run the standalone browser/WebAssembly development server
+	cd wasm && npm install && npm run dev

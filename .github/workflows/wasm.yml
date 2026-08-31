@@ -1,0 +1,41 @@
+name: WebAssembly
+
+on:
+  push:
+    paths:
+      - ".github/workflows/wasm.yml"
+      - "csharp/wwwroot/index.html"
+      - "wasm/**"
+      - "Makefile"
+  pull_request:
+    paths:
+      - ".github/workflows/wasm.yml"
+      - "csharp/wwwroot/index.html"
+      - "wasm/**"
+      - "Makefile"
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: wasm/package-lock.json
+      - run: npm ci
+        working-directory: wasm
+      - run: npm test
+        working-directory: wasm
+      - run: npm run build
+        working-directory: wasm
+      - uses: actions/upload-artifact@v7
+        with:
+          name: r2wars-wasm
+          path: wasm/dist
+          if-no-files-found: error
+          retention-days: 7
