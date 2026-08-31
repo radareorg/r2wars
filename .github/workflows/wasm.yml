@@ -4,13 +4,13 @@ on:
   push:
     paths:
       - ".github/workflows/wasm.yml"
-      - "csharp/wwwroot/index.html"
+      - "csharp/wwwroot/**"
       - "wasm/**"
       - "Makefile"
   pull_request:
     paths:
       - ".github/workflows/wasm.yml"
-      - "csharp/wwwroot/index.html"
+      - "csharp/wwwroot/**"
       - "wasm/**"
       - "Makefile"
 
@@ -33,6 +33,8 @@ jobs:
         working-directory: wasm
       - run: npm run build
         working-directory: wasm
+      - name: Check shared .NET client bundle
+        run: git diff --exit-code -- csharp/wwwroot/assets/r2wars-ui.js
       - uses: actions/upload-artifact@v7
         with:
           name: r2wars-wasm

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -11,6 +12,11 @@ namespace r2warsTorneo
     public static class r2warsWebSocket
     {
         private const int MaxMessageSize = 1024 * 1024;
+        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
         public static async Task HandleAsync(WebSocket socket, CancellationToken cancellationToken)
         {
@@ -132,6 +138,22 @@ namespace r2warsTorneo
 
         private static string Dispatch(string command)
         {
+            if (command.TrimStart().StartsWith("{", StringComparison.Ordinal))
+            {
+                try
+                {
+                    return DispatchJson(command);
+                }
+                catch (Exception exception)
+                {
+                    return JsonSerializer.Serialize(new
+                    {
+                        type = "error",
+                        message = exception.Message,
+                        recoverable = true
+                    }, JsonOptions);
+                }
+            }
             switch (command)
             {
                 case "cmd_state":
@@ -180,6 +202,50 @@ namespace r2warsTorneo
             }
 
             return null;
+        }
+
+        private static string DispatchJson(string payload)
+        {
+            using JsonDocument document = JsonDocument.Parse(payload);
+            JsonElement root = document.RootElement;
+            string type = root.GetProperty("type").GetString() ?? "";
+            switch (type)
+            {
+                case "bots":
+                    return JsonSerializer.Serialize(new
+                    {
+                        type = "bots",
+                        warriors = r2warsStatic.torneo.GetWarriorSources()
+                    }, JsonOptions);
+                case "assemble":
+                {
+                    int requestId = root.GetProperty("requestId").GetInt32();
+                    BrowserWarriorSource warrior = root.GetProperty("warrior")
+                        .Deserialize<BrowserWarriorSource>(JsonOptions);
+                    WarriorAssemblyResult result = WarriorCompiler.Assemble(warrior);
+                    return JsonSerializer.Serialize(new
+                    {
+                        type = "assembly",
+                        requestId,
+                        ok = result.Ok,
+                        bytes = Array.ConvertAll(result.Bytes, value => (int)value),
+                        size = result.Size,
+                        message = result.Message
+                    }, JsonOptions);
+                }
+                case "load":
+                case "start":
+                {
+                    BrowserWarriorSource[] warriors = root.GetProperty("warriors")
+                        .Deserialize<BrowserWarriorSource[]>(JsonOptions) ?? Array.Empty<BrowserWarriorSource>();
+                    r2warsStatic.torneo.LoadTournamentSources(warriors);
+                    if (type == "start")
+                        r2warsStatic.torneo.RunTournamentCombats();
+                    return null;
+                }
+                default:
+                    throw new InvalidOperationException("Unknown browser message type: " + type);
+            }
         }
     }
 }

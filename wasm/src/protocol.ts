@@ -39,9 +39,10 @@ export type MainToWorker =
 
 export type WorkerToMain =
   | { type: "ready" }
-  | { type: "state"; state: AppState }
+  | { type: "bots"; warriors: WarriorSource[] }
+  | { type: "state"; state: Partial<AppState> }
   | { type: "assembly"; requestId: number; ok: boolean; bytes: number[]; size: number; message: string }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string; recoverable?: boolean };
 
 export const emptyMemory = (): string[] => Array.from({ length: 1024 }, () => "");
 

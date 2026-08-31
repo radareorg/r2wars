@@ -49,14 +49,15 @@ The Docker image pins radare2 6.2.0 and verifies the official `amd64` or
 Install the .NET 10 SDK and radare2, then run:
 
 ```sh
-dotnet run --project csharp/r2wars.csproj -- warriors
+dotnet run --project csharp/r2wars.csproj -- ../warriors
 ```
 
 Open <http://127.0.0.1:9664/>.
 
 On Linux, macOS, and BSD, `radare2` and `rasm2` are loaded from `PATH`. On
 Windows, put `radare2.exe` and `rasm2.exe` in `PATH` or alongside the published
-r2wars application.
+r2wars application. The native interface uses the same bot manager and editor
+as the WebAssembly build; live previews are assembled by native `rasm2`.
 
 ## WebAssembly version
 
@@ -109,22 +110,25 @@ You can choose a different archive name when needed:
 make wasm-dist WASM_ARCHIVE=my-r2wars-build.zip
 ```
 
-### Browser controls
+### Shared web controls
 
-- Three example warriors are loaded initially.
+- The WebAssembly build initially loads three bundled bots. The .NET build
+  loads the configured warriors directory.
 - Open **Bots** while the tournament is not running to inspect the complete
   roster, create or import bots, rename them, edit their assembly, or remove
   them.
 - Bot edits are drafts. They do not modify a running or paused tournament and
   are validated and loaded only when **Start new tournament** is selected.
-- Every filename or source edit is assembled immediately by radare2 Wasm. The
-  editor shows a red or green result, the compiled size, and the complete byte
-  array; results over the 512-byte warrior limit are marked red.
+- Every filename or source edit is assembled immediately by the selected
+  engine—radare2 Wasm in the static build or native `rasm2` in the .NET build.
+  The editor shows a red or green result, the compiled size, and the complete
+  byte array; results over the 512-byte warrior limit are marked red.
 - Select **Choose warriors** to replace the draft roster with local `.asm`
   files. Dropping `.asm` files onto the page adds or updates bots by filename.
 - Tournaments support run, pause, single-cycle stepping, bounded history,
   standings, and downloadable reports.
-- Tournament execution stays in a worker so the interface remains responsive.
+- In the WebAssembly build, tournament execution stays in a worker so the
+  interface remains responsive.
 
 ### Browser architecture support
 

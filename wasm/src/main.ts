@@ -1,7 +1,14 @@
 import { emptyState, type AppState, type MainToWorker, type WarriorSource, type WorkerToMain } from "./protocol";
 import { cloneWarriors, mergeWarriors, newWarrior, validateWarriors } from "./bots";
 
-const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+const dotnetMode = import.meta.env.VITE_R2WARS_ENGINE === "dotnet"
+  || document.documentElement.dataset.r2warsEngine === "dotnet";
+let worker: Worker | null = null;
+let socket: WebSocket | null = null;
+let reconnectTimer = 0;
+let initialBotsResolve: ((warriors: WarriorSource[]) => void) | null = null;
+let initialBotsReject: ((error: Error) => void) | null = null;
+let initialized = false;
 let state = emptyState();
 let ready = false;
 let actionPending = false;
@@ -18,7 +25,12 @@ const element = <T extends HTMLElement>(id: string): T => {
 };
 
 function send(message: MainToWorker): void {
-  worker.postMessage(message);
+  if (!dotnetMode) {
+    worker?.postMessage(message);
+    return;
+  }
+  if (!socket || socket.readyState !== WebSocket.OPEN) throw new Error("The .NET connection is not ready");
+  socket.send(message.type === "command" ? message.command : JSON.stringify(message));
 }
 
 function sendCommand(command: string): void {
@@ -29,10 +41,12 @@ function sendCommand(command: string): void {
 }
 
 function installLocalControls(): HTMLInputElement {
-  document.title = "r2wars — WebAssembly arena";
+  document.title = `r2wars — ${dotnetMode ? ".NET" : "WebAssembly"} arena`;
   const description = document.createElement("meta");
   description.name = "description";
-  description.content = "Run multi-architecture r2wars tournaments entirely in your browser with radare2 WebAssembly.";
+  description.content = dotnetMode
+    ? "Run multi-architecture r2wars tournaments with the native .NET and radare2 engine."
+    : "Run multi-architecture r2wars tournaments entirely in your browser with radare2 WebAssembly.";
   document.head.append(description);
 
   const style = document.createElement("style");
@@ -104,7 +118,7 @@ function installLocalControls(): HTMLInputElement {
   if (inspection) {
     const note = document.createElement("span");
     note.className = "wasm-note";
-    note.textContent = "Local engine · drop .asm files anywhere";
+    note.textContent = `${dotnetMode ? "Native engine" : "Local Wasm"} · drop .asm files anywhere`;
     inspection.prepend(note);
   }
 
@@ -269,25 +283,53 @@ document.addEventListener("drop", async (event) => {
   }
 });
 
-worker.onmessage = async (event: MessageEvent<WorkerToMain>) => {
-  const message = event.data;
+async function handleTransportMessage(message: WorkerToMain): Promise<void> {
   if (message.type === "ready") {
     ready = true;
-    element("connection").textContent = "Local Wasm";
+    element("connection").textContent = dotnetMode ? ".NET server" : "Local Wasm";
     element("connection").className = "connection local";
-    await loadExamples();
+    if (!initialized) {
+      initialized = true;
+      await loadExamples();
+    } else if (dotnetMode) {
+      send({ type: "command", command: "cmd_state" });
+    }
+  } else if (message.type === "bots") {
+    initialBotsResolve?.(message.warriors);
+    initialBotsResolve = null;
+    initialBotsReject = null;
   } else if (message.type === "assembly") {
     showAssemblyResult(message);
   } else if (message.type === "state") {
     actionPending = false;
-    state = message.state;
+    state = mergeAppState(state, message.state);
     updateUI();
   } else {
-    showFatal(message.message);
+    if (message.recoverable) {
+      actionPending = false;
+      initialBotsReject?.(new Error(message.message));
+      initialBotsResolve = null;
+      initialBotsReject = null;
+      if (initialized) {
+        showBotManager();
+        updateBotManagerStatus(message.message);
+      }
+      syncControls();
+    } else {
+      showFatal(message.message);
+    }
   }
-};
+}
 
-worker.onerror = (event) => showFatal(event.message || "The WebAssembly worker stopped unexpectedly");
+function mergeAppState(current: AppState, update: Partial<AppState>): AppState {
+  return {
+    ...current,
+    ...update,
+    player1: { ...current.player1, ...update.player1 },
+    player2: { ...current.player2, ...update.player2 },
+    memory: update.memory ?? current.memory,
+  };
+}
 
 async function readFiles(files: File[]): Promise<WarriorSource[]> {
   return Promise.all(files.map(async (file) => ({ name: file.name, source: await file.text() })));
@@ -295,15 +337,7 @@ async function readFiles(files: File[]): Promise<WarriorSource[]> {
 
 async function loadExamples(): Promise<void> {
   try {
-    const base = import.meta.env.BASE_URL;
-    const manifestResponse = await fetch(`${base}warriors/manifest.json`);
-    if (!manifestResponse.ok) throw new Error(`HTTP ${manifestResponse.status}`);
-    const names = await manifestResponse.json() as string[];
-    const warriors = await Promise.all(names.map(async (name) => {
-      const response = await fetch(`${base}warriors/${encodeURIComponent(name)}`);
-      if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
-      return { name, source: await response.text() };
-    }));
+    const warriors = dotnetMode ? await requestDotnetBots() : await fetchBundledBots();
     bots = cloneWarriors(warriors);
     selectedBot = bots.length ? 0 : -1;
     botsDirty = false;
@@ -313,6 +347,32 @@ async function loadExamples(): Promise<void> {
     state.message = `Choose at least two warrior files. Bundled examples could not be loaded: ${error instanceof Error ? error.message : error}`;
     updateUI();
   }
+}
+
+async function fetchBundledBots(): Promise<WarriorSource[]> {
+  const base = import.meta.env.BASE_URL;
+  const manifestResponse = await fetch(`${base}warriors/manifest.json`);
+  if (!manifestResponse.ok) throw new Error(`HTTP ${manifestResponse.status}`);
+  const names = await manifestResponse.json() as string[];
+  return Promise.all(names.map(async (name) => {
+    const response = await fetch(`${base}warriors/${encodeURIComponent(name)}`);
+    if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
+    return { name, source: await response.text() };
+  }));
+}
+
+function requestDotnetBots(): Promise<WarriorSource[]> {
+  return new Promise((resolve, reject) => {
+    initialBotsResolve = resolve;
+    initialBotsReject = reject;
+    socket?.send(JSON.stringify({ type: "bots" }));
+    window.setTimeout(() => {
+      if (initialBotsResolve !== resolve) return;
+      initialBotsResolve = null;
+      initialBotsReject = null;
+      reject(new Error("Timed out while loading bots from the .NET server"));
+    }, 5000);
+  });
 }
 
 function preparedBots(): WarriorSource[] {
@@ -463,10 +523,72 @@ function showFatal(message: string): void {
   actionPending = false;
   state.workflow = "error";
   state.message = message;
-  state.status = "WebAssembly error";
+  state.status = dotnetMode ? ".NET engine error" : "WebAssembly error";
   element("connection").textContent = "Engine error";
   element("connection").className = "connection disconnected";
   updateUI();
+}
+
+function connectTransport(): void {
+  if (dotnetMode) {
+    connectDotnet();
+    return;
+  }
+  worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+  worker.onmessage = (event: MessageEvent<WorkerToMain>) => void handleTransportMessage(event.data);
+  worker.onerror = (event) => showFatal(event.message || "The WebAssembly worker stopped unexpectedly");
+  const wasmUrl = new URL(`${import.meta.env.BASE_URL}radare2.wasm`, window.location.href).href;
+  worker.postMessage({ type: "init", wasmUrl } satisfies MainToWorker);
+}
+
+function connectDotnet(): void {
+  window.clearTimeout(reconnectTimer);
+  const scheme = window.location.protocol === "https:" ? "wss" : "ws";
+  const url = window.R2WARS_WS_URL || `${scheme}://${window.location.hostname}:9966/r2wars`;
+  socket = new WebSocket(url);
+  element("connection").textContent = "Connecting…";
+  element("connection").className = "connection connecting";
+  socket.onopen = () => void handleTransportMessage({ type: "ready" });
+  socket.onmessage = (event) => handleDotnetPayload(String(event.data));
+  socket.onerror = () => {
+    element("connection").textContent = "Connection error";
+    element("connection").className = "connection disconnected";
+  };
+  socket.onclose = () => {
+    ready = false;
+    actionPending = false;
+    initialBotsReject?.(new Error("The .NET connection closed while loading bots"));
+    initialBotsResolve = null;
+    initialBotsReject = null;
+    element("connection").textContent = "Disconnected — reconnecting…";
+    element("connection").className = "connection disconnected";
+    syncControls();
+    reconnectTimer = window.setTimeout(connectDotnet, 2000);
+  };
+}
+
+function handleDotnetPayload(payload: string): void {
+  if (payload === "none") return;
+  if (payload === "on") {
+    send({ type: "command", command: "moreflow" });
+    return;
+  }
+  if (payload === "nowarriors") {
+    initialBotsResolve?.([]);
+    initialBotsResolve = null;
+    initialBotsReject = null;
+    return;
+  }
+  try {
+    const parsed = JSON.parse(payload) as Record<string, unknown>;
+    if (parsed.type === "bots" || parsed.type === "assembly" || parsed.type === "error") {
+      void handleTransportMessage(parsed as unknown as WorkerToMain);
+    } else {
+      void handleTransportMessage({ type: "state", state: parsed as Partial<AppState> });
+    }
+  } catch {
+    showFatal("The .NET server sent an invalid update");
+  }
 }
 
 function syncControls(): void {
@@ -531,7 +653,7 @@ function updateUI(): void {
   element("workflow_badge").textContent = labels[state.workflow] || state.workflow;
   element("workflow_badge").className = `workflow-badge ${state.workflow}`;
   element("progress").textContent = state.workflow === "idle" || state.workflow === "loading"
-    ? "Runs entirely in this browser"
+    ? (dotnetMode ? "Connected to the native engine" : "Runs entirely in this browser")
     : `${state.completedCombats} / ${state.totalCombats} battles${state.workflow === "finished" ? " complete" : ""}`;
   element("stage_title").textContent = titles[state.workflow] || "";
   element("stage_detail").textContent = state.message || "";
@@ -596,5 +718,10 @@ function downloadReport(): void {
 
 state.memory = Array.from({ length: 1024 }, () => "");
 updateUI();
-const wasmUrl = new URL(`${import.meta.env.BASE_URL}radare2.wasm`, window.location.href).href;
-send({ type: "init", wasmUrl });
+connectTransport();
+
+declare global {
+  interface Window {
+    R2WARS_WS_URL?: string;
+  }
+}

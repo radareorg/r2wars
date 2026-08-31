@@ -32,6 +32,7 @@ namespace r2warsTorneo
         string actualCombatLog = "";
         string actualDeadReason = "";
         string warriorsDirectory = "warriors";
+        string browserWarriorsDirectory = "";
         string workflow = "idle";
         string workflowMessage = "Load warriors to begin.";
         string scores = "No tournament loaded.";
@@ -46,6 +47,7 @@ namespace r2warsTorneo
             r2w.Event_combatEnd += new MyHandler1(CombatEnd);
             r2w.Event_roundEnd += new MyHandler1(RoundEnd);
             r2w.Event_roundExhausted += new MyHandler1(RoundExhausted);
+            AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) => CleanupBrowserWarriors();
         }
 
         public void SetWarriorsDirectory(string wd)
@@ -402,6 +404,7 @@ namespace r2warsTorneo
         public void LoadTournamentPlayers()
         {
             StopTournament();
+            CleanupBrowserWarriors();
             string[] files;
             try
             {
@@ -420,6 +423,86 @@ namespace r2warsTorneo
                 return;
             }
             CreatePairings(files, "mixed (detected from each filename)", ".asm");
+        }
+
+        public List<BrowserWarriorSource> GetWarriorSources()
+        {
+            string[] files = loadedWarriors.Where(File.Exists).ToArray();
+            if (files.Length == 0)
+            {
+                if (!Directory.Exists(warriorsDirectory))
+                    return new List<BrowserWarriorSource>();
+                files = Directory.GetFiles(warriorsDirectory)
+                    .Where(path => path.EndsWith(".asm", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
+            return files.Select(path => new BrowserWarriorSource
+            {
+                Name = Path.GetFileName(path),
+                Source = File.ReadAllText(path)
+            }).ToList();
+        }
+
+        public void LoadTournamentSources(IReadOnlyList<BrowserWarriorSource> warriors)
+        {
+            if (warriors == null)
+                throw new ArgumentNullException(nameof(warriors));
+            if (warriors.Count > 128)
+                throw new InvalidOperationException("A tournament cannot contain more than 128 bots.");
+
+            HashSet<string> names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (BrowserWarriorSource warrior in warriors)
+            {
+                string name = (warrior?.Name ?? "").Trim();
+                if (name.Length == 0 || name != Path.GetFileName(name) || name.Contains('/') || name.Contains('\\') ||
+                    name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                    throw new InvalidOperationException("Bot filenames must not contain a directory path.");
+                if (!name.EndsWith(".asm", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(name + ": filename must end in .asm");
+                if (WarriorCompiler.ArchitectureFromName(name) == r2archs.eArch.unknown)
+                    throw new InvalidOperationException(name + ": architecture must be encoded in the filename");
+                if (!names.Add(name))
+                    throw new InvalidOperationException("Duplicate bot filename: " + name);
+                if (string.IsNullOrWhiteSpace(warrior.Source))
+                    throw new InvalidOperationException(name + ": source is empty");
+            }
+
+            StopTournament();
+            string directory = Path.Combine(Path.GetTempPath(), "r2wars-web-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            try
+            {
+                string[] files = warriors
+                    .OrderBy(warrior => warrior.Name, StringComparer.OrdinalIgnoreCase)
+                    .Select(warrior =>
+                    {
+                        string path = Path.Combine(directory, warrior.Name.Trim());
+                        File.WriteAllText(path, warrior.Source);
+                        return path;
+                    }).ToArray();
+                CleanupBrowserWarriors();
+                browserWarriorsDirectory = directory;
+                CreatePairings(files, "mixed (browser sources)", ".asm");
+            }
+            catch
+            {
+                try { Directory.Delete(directory, true); }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+                throw;
+            }
+        }
+
+        private void CleanupBrowserWarriors()
+        {
+            if (string.IsNullOrEmpty(browserWarriorsDirectory))
+                return;
+            string directory = browserWarriorsDirectory;
+            browserWarriorsDirectory = "";
+            try { Directory.Delete(directory, true); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
 
         public void ResetTournament()

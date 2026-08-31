@@ -1,12 +1,13 @@
 # r2wars WebAssembly
 
-This directory contains the standalone, browser-only r2wars implementation.
-It is additive: the C# application, its WebSocket protocol, Docker image, and
-native `radare2`/`rasm2` execution remain unchanged.
+This directory contains the shared TypeScript web client and the standalone
+browser engine. The same client is compiled for both the C# WebSocket transport
+and the local Web Worker transport.
 
 ## Architecture
 
-- `src/main.ts` adapts the existing r2wars HTML UI to a local Web Worker.
+- `src/main.ts` owns the shared interface and selects the .NET WebSocket or Wasm
+  Worker transport at build time.
 - `src/bots.ts` manages and validates the editable draft bot roster.
 - `src/worker.ts` owns the tournament controller and keeps ESIL work off the UI
   thread.
@@ -17,8 +18,9 @@ native `radare2`/`rasm2` execution remain unchanged.
 - `src/radare.ts` is the small WASI/FFI wrapper around radare2.
 
 The build reuses the maintained UI markup and styles from
-`csharp/wwwroot/index.html`; it replaces only the WebSocket script with the
-local browser controller.
+`csharp/wwwroot/index.html`. It produces the standalone site in `wasm/dist/`
+and the native client bundle in `csharp/wwwroot/assets/r2wars-ui.js` from the
+same TypeScript source.
 
 ## Commands
 
@@ -26,6 +28,7 @@ local browser controller.
     npm test
     npm run build
     npm run dev
+    npm run build:dotnet
 
 `npm run build` produces a self-contained static directory at `dist/`.
 From the repository root, `make wasm-dist` also creates

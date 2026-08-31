@@ -7,7 +7,8 @@
     "fetch-r2": "node scripts/fetch-r2.mjs",
     "prepare-index": "node scripts/prepare-index.mjs",
     "dev": "npm run fetch-r2 && npm run prepare-index && vite",
-    "build": "npm run fetch-r2 && npm run prepare-index && tsc --noEmit && vite build",
+    "build": "npm run fetch-r2 && npm run prepare-index && tsc --noEmit && vite build && npm run build:dotnet",
+    "build:dotnet": "vite build --config vite.dotnet.config.ts",
     "test": "npm run fetch-r2 && vitest run --config vitest.config.ts"
   },
   "dependencies": {
