@@ -27,6 +27,9 @@ local browser controller.
     npm run dev
 
 `npm run build` produces a self-contained static directory at `dist/`.
+From the repository root, `make wasm-dist` also creates
+`wasm/r2wars-wasm.zip`. Extract its contents directly into a static server's
+document root; `index.html` is at the archive root.
 
 ## radare2 artifact
 

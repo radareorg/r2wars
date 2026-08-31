@@ -1,6 +1,7 @@
 DOCKER ?= docker
+WASM_ARCHIVE ?= r2wars-wasm.zip
 
-.PHONY: default build start stop clean wasm-build wasm-test wasm-run
+.PHONY: default build start stop clean wasm-build wasm-test wasm-run wasm-dist
 
 default: start ## By default, just start the container
 
@@ -31,3 +32,7 @@ wasm-test: ## Test the browser engine against radare2 WebAssembly
 
 wasm-run: ## Run the standalone browser/WebAssembly development server
 	cd wasm && npm install && npm run dev
+
+wasm-dist: wasm-build ## Build a static-host-ready WebAssembly zip archive
+	cd wasm/dist && zip -qrFS "../$(WASM_ARCHIVE)" .
+	@echo "Created wasm/$(WASM_ARCHIVE)"

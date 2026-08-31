@@ -3,3 +3,4 @@ dist/
 .site/
 index.html
 public/radare2.wasm
+r2wars-wasm.zip

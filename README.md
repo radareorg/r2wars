@@ -1,79 +1,180 @@
 # r2wars
 
-![Alt text](csharp/resources/r2wars_logo_transparent.png?raw=true "r2wars Logo")
+![r2wars logo](csharp/resources/r2wars_logo_transparent.png?raw=true "r2wars")
 
-The C# implementation of the r2wars tournament competition
+r2wars is a Core War-style tournament powered by radare2 and ESIL. Two
+assembly warriors share a 1 KiB arena and take turns executing instructions.
+Each warrior tries to corrupt its opponent until the opponent crashes, traps,
+or leaves the arena.
 
-Tournament api from: https://github.com/otac0n/tournaments
+Warriors may target different CPU architectures while competing in the same
+address space.
 
-## Description
+## Choose how to run it
 
-r2wars is a game similar to corewars, where 2 programs run on a
-shared memory space trying to catch each other in order to trash
-their code and make them crash.
+| Mode | Requirements | Execution | Best for |
+| --- | --- | --- | --- |
+| Docker | Docker with Compose | .NET and native radare2 in containers | Fastest local setup |
+| Native | .NET 10 and radare2 | Local .NET server and native radare2 | Development and full architecture support |
+| WebAssembly | Node.js/npm for building | Entirely inside the browser | Static hosting and serverless deployment |
 
-This game was initially developed by pancake as a PoC in here
+The WebAssembly implementation is an alternative execution path. It does not
+replace or change the existing .NET and Docker flows.
 
-* https://github.com/radare/radare2-extras/tree/master/r2wars
+## Quick start with Docker
 
-You can refer to the r2wars For N00bs talk from r2con2020 for more information:
+From the repository root:
 
-* https://www.youtube.com/watch?v=PB0AFBqFwGQ
+```sh
+make start
+```
 
-Furthermore, you can find an explanation of the game in the first competition
-that happened during the 2nd r2con in 2017.
+Open <http://127.0.0.1:9664/>. The local `warriors/` directory is mounted
+read-only into the container.
 
-* https://www.youtube.com/watch?v=sB-i5yUatx4
+Useful commands:
 
-This repository contains an evolved implementation of the engine
-written in C# by SkUaTeR dropping the MFC requirement that was
-making it impossible to run outside Windows.
+```sh
+make build   # build the Docker image
+make start   # start r2wars and its nginx frontend
+make stop    # stop the containers
+make clean   # stop and remove the r2wars image
+```
 
-The solution was to use an embedded webserver that provides a
-web interface using websockets to stream the process changes
-from the M
+The Docker image pins radare2 6.2.0 and verifies the official `amd64` or
+`arm64` release package before installing it.
 
-## Dependencies
+## Run natively
 
-* .NET 10 SDK (to build) or ASP.NET Core Runtime 10 (to run a published build)
-* radare2
+Install the .NET 10 SDK and radare2, then run:
 
-The Docker image pins radare2 6.2.0 and installs the checksummed `amd64` or
-`arm64` package from the official GitHub release.
+```sh
+dotnet run --project csharp/r2wars.csproj -- warriors
+```
 
-Run the application from the repository root with:
+Open <http://127.0.0.1:9664/>.
 
-    dotnet run --project csharp/r2wars.csproj -- warriors
+On Linux, macOS, and BSD, `radare2` and `rasm2` are loaded from `PATH`. On
+Windows, put `radare2.exe` and `rasm2.exe` in `PATH` or alongside the published
+r2wars application.
 
-Then open `http://127.0.0.1:9664/`.
+## WebAssembly version
 
-## Browser-only WebAssembly build
+The browser version runs the tournament controller and radare2 ESIL locally in
+a Web Worker. It has no Kestrel or WebSocket connection, does not require
+Docker or .NET at runtime, and never uploads warrior source or tournament state.
 
-The `wasm/` application is an alternative execution path that runs the
-tournament and radare2 ESIL entirely inside the browser. It does not connect to
-Kestrel, WebSockets, Docker, or a locally installed copy of radare2.
+### Build and run locally
 
-Build it from the repository root with:
+```sh
+make wasm-build
+make wasm-run
+```
 
-    make wasm-build
+Then open <http://127.0.0.1:5173/>. The production site is generated in
+`wasm/dist/`.
 
-The static application is written to `wasm/dist/`. During development, run:
+The first build downloads the official radare2 6.2.0 WASI API module and
+verifies the checksums of both the release archive and extracted Wasm module.
+The module is about 44 MB before HTTP or ZIP compression.
 
-    make wasm-run
+### Create a deployable ZIP
 
-The first build downloads the pinned, checksummed radare2 6.2.0 WASI API
-module. The generated static site includes that module and can be hosted by any
-static file host. After the site loads, warrior source and tournament state do
-not leave the browser.
+```sh
+make wasm-dist
+```
 
-The browser build starts with three bundled example warriors. Use **Choose
-warriors** or drag two or more `.asm` files onto the page to run a different
-tournament. Architecture and bitness use the same filename convention as the
-.NET version.
+This creates `wasm/r2wars-wasm.zip`. The archive contains the complete static
+site with `index.html` at its root:
 
-On Windows you need to have radare2.exe and rasm2.exe in the published
-application directory or in `PATH`.
+```text
+index.html
+radare2.wasm
+assets/
+warriors/
+```
 
-On Mac/Linux/BSD, r2wars will try to find them in the PATH.
+Extract those files directly into a static server's document root. No
+application backend, .NET runtime, radare2 installation, or WebSocket proxy is
+needed. The paths are relative, so the site can also be hosted below a URL
+prefix.
 
---pancake
+The server should deliver `.wasm` files as `application/wasm`. Opening
+`index.html` through `file://` is not supported because browsers restrict local
+Wasm and module loading; use any ordinary HTTP(S) static server instead.
+
+You can choose a different archive name when needed:
+
+```sh
+make wasm-dist WASM_ARCHIVE=my-r2wars-build.zip
+```
+
+### Browser controls
+
+- Three example warriors are loaded initially.
+- Select **Choose warriors** to load two or more local `.asm` files.
+- Warrior files can also be dropped anywhere on the page.
+- Tournaments support run, pause, single-cycle stepping, bounded history,
+  standings, and downloadable reports.
+- Tournament execution stays in a worker so the interface remains responsive.
+
+### Browser architecture support
+
+The official radare2 6.2.0 WASI module contains x86, ARM, MIPS, RISC-V, and
+Game Boy support. It does not contain the 8051 plugin, so 8051 warriors require
+the native or Docker version for now.
+
+See [wasm/README.md](wasm/README.md) for implementation details and direct npm
+commands.
+
+## Writing warriors
+
+A tournament requires at least two non-empty `.asm` files. The architecture
+and bitness are encoded before the `.asm` extension:
+
+```text
+scanner.x86-32.asm
+hammer.arm-64.asm
+probe.mips-32.asm
+```
+
+Supported filename markers are:
+
+- `.x86-32.asm` and `.x86-64.asm`
+- `.arm-16.asm`, `.arm-32.asm`, and `.arm-64.asm`
+- `.mips-32.asm` and `.mips-64.asm`
+- `.riscv-32.asm` and `.riscv-64.asm`
+- `.gb.asm`
+- `.8051.asm` in the native and Docker versions
+
+Examples for several architectures are available in `examples/`. The default
+native and Docker tournament reads warriors from `warriors/`.
+
+## WebAssembly development commands
+
+Run these from the repository root:
+
+```sh
+make wasm-test   # test parsers and the engine against the real radare2 Wasm
+make wasm-build  # type-check and build wasm/dist/
+make wasm-run    # start the Vite development server
+make wasm-dist   # build and package wasm/r2wars-wasm.zip
+```
+
+The dedicated WebAssembly CI workflow runs the tests and production build, then
+uploads `wasm/dist/` as the `r2wars-wasm` artifact.
+
+## Background
+
+The original proof of concept lives in
+[radare2-extras](https://github.com/radare/radare2-extras/tree/master/r2wars).
+This repository evolved the engine into a portable C# implementation by
+SkUaTeR, replacing the original Windows-only MFC interface with a web UI.
+
+Further introductions:
+
+- [r2wars for N00bs — r2con 2020](https://www.youtube.com/watch?v=PB0AFBqFwGQ)
+- [r2wars competition — r2con 2017](https://www.youtube.com/watch?v=sB-i5yUatx4)
+- [Tournament library](https://github.com/otac0n/tournaments)
+
+— pancake
