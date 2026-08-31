@@ -37,7 +37,7 @@ export class TournamentController {
     this.engine = new CombatEngine(runtime);
   }
 
-  load(warriors: WarriorSource[]): void {
+  load(warriors: WarriorSource[], emit = true): void {
     this.stopLoop();
     this.engine.dispose();
     const normalized = warriors
@@ -78,7 +78,13 @@ export class TournamentController {
       this.workflow = "ready";
       this.message = `${normalized.length} warriors loaded for ${this.pairings.length} battles. Start when ready.`;
     }
-    this.emitState();
+    if (emit) this.emitState();
+  }
+
+  start(warriors: WarriorSource[]): void {
+    this.load(warriors, false);
+    if (this.workflow === "ready") this.run();
+    else this.emitState();
   }
 
   command(command: string): void {

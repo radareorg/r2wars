@@ -33,11 +33,14 @@ export interface AppState {
 export type MainToWorker =
   | { type: "init"; wasmUrl: string }
   | { type: "load"; warriors: WarriorSource[] }
+  | { type: "start"; warriors: WarriorSource[] }
+  | { type: "assemble"; requestId: number; warrior: WarriorSource }
   | { type: "command"; command: string };
 
 export type WorkerToMain =
   | { type: "ready" }
   | { type: "state"; state: AppState }
+  | { type: "assembly"; requestId: number; ok: boolean; bytes: number[]; size: number; message: string }
   | { type: "error"; message: string };
 
 export const emptyMemory = (): string[] => Array.from({ length: 1024 }, () => "");

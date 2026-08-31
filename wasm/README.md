@@ -7,6 +7,7 @@ native `radare2`/`rasm2` execution remain unchanged.
 ## Architecture
 
 - `src/main.ts` adapts the existing r2wars HTML UI to a local Web Worker.
+- `src/bots.ts` manages and validates the editable draft bot roster.
 - `src/worker.ts` owns the tournament controller and keeps ESIL work off the UI
   thread.
 - `src/tournament.ts` implements round-robin scheduling, scoring, pause/step,
@@ -30,6 +31,13 @@ local browser controller.
 From the repository root, `make wasm-dist` also creates
 `wasm/r2wars-wasm.zip`. Extract its contents directly into a static server's
 document root; `index.html` is at the archive root.
+
+The **Bots** dialog can create, import, rename, edit, and delete browser-local
+warriors. These edits remain in a draft roster and are sent to the worker only
+when a new tournament starts, so they cannot mutate an active combat. Each
+editor input event also makes an isolated assembly request and displays the
+radare2 result, byte count, and byte array without loading that code into the
+tournament engine.
 
 ## radare2 artifact
 

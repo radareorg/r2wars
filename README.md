@@ -112,8 +112,16 @@ make wasm-dist WASM_ARCHIVE=my-r2wars-build.zip
 ### Browser controls
 
 - Three example warriors are loaded initially.
-- Select **Choose warriors** to load two or more local `.asm` files.
-- Warrior files can also be dropped anywhere on the page.
+- Open **Bots** while the tournament is not running to inspect the complete
+  roster, create or import bots, rename them, edit their assembly, or remove
+  them.
+- Bot edits are drafts. They do not modify a running or paused tournament and
+  are validated and loaded only when **Start new tournament** is selected.
+- Every filename or source edit is assembled immediately by radare2 Wasm. The
+  editor shows a red or green result, the compiled size, and the complete byte
+  array; results over the 512-byte warrior limit are marked red.
+- Select **Choose warriors** to replace the draft roster with local `.asm`
+  files. Dropping `.asm` files onto the page adds or updates bots by filename.
 - Tournaments support run, pause, single-cycle stepping, bounded history,
   standings, and downloadable reports.
 - Tournament execution stays in a worker so the interface remains responsive.
