@@ -89,15 +89,6 @@ function installLocalControls(): HTMLInputElement {
     .bot-manager-status.error { color:#8c1010; font-weight:bold; }
     #bot_start { background:#d8f5de; border-color:#318244; font-weight:bold; }
     @media (max-width: 900px), (orientation: portrait) {
-      body { overflow:auto; margin:0; }
-      .div1,.div2,.divM,.divM2,.divM3 { box-sizing:border-box; height:auto; left:auto; position:relative; right:auto; top:auto; width:100%; }
-      .div1,.div2 { min-height:420px; }
-      .divM { min-height:560px; overflow:auto; }
-      .divM2 { bottom:auto; min-height:165px; }
-      .divM3 { bottom:auto; height:260px; }
-      .control-row { grid-template-columns:repeat(3,1fr); }
-      .legend1,.legend2 { display:none; }
-      .console2 { min-height:220px; }
       .bot-manager { inset:0; border:0; }
       .bot-manager-panel { height:100%; width:100%; }
       .bot-manager-body { grid-template-columns:1fr; grid-template-rows:minmax(150px,32%) 1fr; }
@@ -660,6 +651,7 @@ function updateUI(): void {
   const notice = element("stage_notice");
   notice.className = `stage-notice ${state.workflow}`;
   notice.hidden = state.workflow === "running" || state.workflow === "paused";
+  if (element<HTMLElement>("overlay").style.display === "block") refreshScores();
   syncControls();
 }
 
@@ -692,10 +684,14 @@ function memoryColor(value = ""): string {
 }
 
 function showScores(): void {
-  element("score_title").textContent = state.workflow === "finished" ? "Final standings" : "Tournament scores";
-  element("scores").textContent = state.scores || "No scores yet.";
+  refreshScores();
   element<HTMLElement>("overlay").style.display = "block";
   element<HTMLButtonElement>("score_close").focus();
+}
+
+function refreshScores(): void {
+  element("score_title").textContent = state.workflow === "finished" ? "Final standings" : "Tournament scores";
+  element("scores").textContent = state.scores || "No scores yet.";
 }
 
 function hideScores(): void {

@@ -479,13 +479,121 @@
             text-shadow: 1px 1px #fff;
         }
 
-        .win98 button:active:enabled {
+    .win98 button:active:enabled {
             box-shadow: 1px 1px 0 0 #000 inset;
             border-top-color: #808080;
             border-left-color: #808080;
             border-right-color: #dfdfdf;
             border-bottom-color: #dfdfdf;
         }
+
+    /* On narrow or portrait screens, keep the arena visible before the code. */
+    @media (max-width: 900px), (orientation: portrait) {
+        body {
+            margin: 0;
+            overflow: auto;
+        }
+
+        .div1, .div2, .divM, .divM2, .divM3 {
+            box-sizing: border-box;
+            left: auto;
+            position: relative;
+            right: auto;
+            top: auto;
+            width: 100%;
+        }
+
+        .div1, .div2 {
+            height: 180px;
+            min-height: 0;
+            overflow: hidden !important;
+        }
+
+        .div1 table, .div2 table {
+            height: 100% !important;
+            table-layout: fixed;
+        }
+
+        .player1, .player2 {
+            box-sizing: border-box;
+            font-size: 1.1em;
+            line-height: 1.5;
+            overflow: hidden;
+            padding-left: 0.5em;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .active-dot {
+            height: 0.6em;
+            margin: 0 0.35em;
+            width: 0.6em;
+        }
+
+        .console1 {
+            box-sizing: border-box;
+            font-size: 12px;
+            height: 44px;
+            overflow: auto;
+        }
+
+        .console2 {
+            box-sizing: border-box;
+            font-size: 11px;
+            height: 94px;
+            line-height: 1.2;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        .divM {
+            height: min(440px, 115vw);
+            min-height: 0;
+            overflow: auto;
+        }
+
+        .divM table {
+            height: 100% !important;
+            table-layout: fixed;
+        }
+
+        .memory {
+            min-width: 0;
+        }
+
+        .memtable {
+            font-size: 9px;
+            table-layout: fixed;
+        }
+
+        .addr {
+            width: 4em;
+        }
+
+        .box {
+            height: 0.9em;
+            padding: 0;
+            width: auto;
+        }
+
+        .divM2 {
+            bottom: auto;
+            min-height: 165px;
+        }
+
+        .divM3 {
+            bottom: auto;
+            height: 180px;
+        }
+
+        .control-row {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .legend1, .legend2 {
+            display: none;
+        }
+    }
 </style>
 </head>
 <body>
